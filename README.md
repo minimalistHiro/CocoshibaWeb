@@ -1,6 +1,8 @@
-# cocoshibaweb
+# CocoshibaWeb
 
-A new Flutter project.
+Flutter Web 版 Cocoshiba（MVP）。
+
+詳細は `README_WEB.md` を参照してください。
 
 ## Getting Started
 
