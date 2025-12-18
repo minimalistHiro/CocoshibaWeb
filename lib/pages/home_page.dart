@@ -1,9 +1,16 @@
+import 'package:cocoshibaweb/models/calendar_event.dart';
+import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/pages/calendar_page.dart';
+import 'package:cocoshibaweb/pages/event_detail_page.dart';
+import 'package:cocoshibaweb/services/event_service.dart';
+import 'package:cocoshibaweb/widgets/event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  static final EventService _eventService = EventService();
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +38,24 @@ class HomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: const CalendarView(embedded: true),
+              padding: EdgeInsets.all(8),
+              child: CalendarView(embedded: true),
             ),
           ),
+        ),
+        const SizedBox(height: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _ReservedEventsSection(),
+        ),
+        const SizedBox(height: 24),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _UpcomingEventsSection(),
         ),
         const SizedBox(height: 24),
         Padding(
@@ -69,7 +86,8 @@ class HomePage extends StatelessWidget {
                           'Antenna Books & Cafe ココシバ\n'
                           '電話番号：080-6050-7194\n'
                           'メールアドレス：h.kaneko.baseball@icloud.com',
-                          style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                          style:
+                              theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
@@ -86,7 +104,8 @@ class HomePage extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           '営業時間：11:00〜18:00（月、火定休）',
-                          style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                          style:
+                              theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                         ),
                       ],
                     ),
@@ -141,7 +160,8 @@ class _HeroSection extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -190,6 +210,230 @@ class _HeroSection extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UpcomingEventsSection extends StatelessWidget {
+  const _UpcomingEventsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '直近のイベント',
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        StreamBuilder<List<CalendarEvent>>(
+          stream: HomePage._eventService.watchUpcomingEvents(limit: 7),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Text(
+                  'イベント情報の取得に失敗しました。\n${snapshot.error}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              );
+            }
+
+            final events = snapshot.data ?? const <CalendarEvent>[];
+            final visibleEvents =
+                events.where((event) => !event.isClosedDay).toList();
+            final isLoading =
+                snapshot.connectionState == ConnectionState.waiting;
+
+            if (isLoading && visibleEvents.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const CircularProgressIndicator(),
+              );
+            }
+
+            if (visibleEvents.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Text(
+                  '直近のイベントはまだありません',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              );
+            }
+
+            return _UpcomingEventsScroller(
+              events: visibleEvents,
+              onEventTap: (event) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => EventDetailPage(event: event)),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ReservedEventsSection extends StatelessWidget {
+  const _ReservedEventsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final auth = AppServices.of(context).auth;
+
+    return StreamBuilder(
+      stream: auth.onAuthStateChanged,
+      builder: (context, snapshot) {
+        final user = snapshot.data ?? auth.currentUser;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '予約したイベント',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            StreamBuilder<List<CalendarEvent>>(
+              stream: user == null
+                  ? Stream.value(const <CalendarEvent>[])
+                  : HomePage._eventService.watchReservedEvents(user.uid),
+              builder: (context, reservedSnapshot) {
+                final reservedEvents =
+                    (reservedSnapshot.data ?? const <CalendarEvent>[])
+                        .take(7)
+                        .toList(growable: false);
+
+                if (reservedSnapshot.connectionState ==
+                        ConnectionState.waiting &&
+                    reservedEvents.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (reservedEvents.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Text(
+                      '予約したイベントはまだありません',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  );
+                }
+
+                return _UpcomingEventsScroller(
+                  events: reservedEvents,
+                  onEventTap: (event) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => EventDetailPage(event: event),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _UpcomingEventsScroller extends StatelessWidget {
+  const _UpcomingEventsScroller({
+    required this.events,
+    required this.onEventTap,
+  });
+
+  final List<CalendarEvent> events;
+  final ValueChanged<CalendarEvent> onEventTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const double crossAxisSpacing = 16;
+        final availableWidth = constraints.maxWidth.clamp(0.0, double.infinity);
+        final cardWidth =
+            (availableWidth * 0.48).clamp(220.0, 320.0).toDouble();
+        final imageHeight = cardWidth;
+        final imageCacheWidth = (cardWidth * dpr).round();
+        final imageCacheHeight = (imageHeight * dpr).round();
+        final totalHeight = imageHeight + 84;
+
+        return SizedBox(
+          height: totalHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            primary: false,
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: events.length,
+            separatorBuilder: (_, __) =>
+                const SizedBox(width: crossAxisSpacing),
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return SizedBox(
+                width: cardWidth,
+                child: RepaintBoundary(
+                  child: EventCard(
+                    event: event,
+                    onTap: event.isClosedDay ? null : () => onEventTap(event),
+                    imageCacheWidth:
+                        imageCacheWidth > 0 ? imageCacheWidth : null,
+                    imageCacheHeight:
+                        imageCacheHeight > 0 ? imageCacheHeight : null,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
