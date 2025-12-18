@@ -2,6 +2,8 @@ abstract class AuthService {
   Stream<AuthUser?> get onAuthStateChanged;
   AuthUser? get currentUser;
 
+  Future<void> signInWithGoogle();
+
   Future<void> updateUserProfile({
     String? displayName,
     String? photoUrl,

@@ -17,6 +17,12 @@ class FakeAuthService implements AuthService {
   AuthUser? get currentUser => _currentUser;
 
   @override
+  Future<void> signInWithGoogle() async {
+    _currentUser = const AuthUser(uid: 'google_uid', email: 'google@example.com');
+    _controller.add(_currentUser);
+  }
+
+  @override
   Future<void> updateUserProfile({
     String? displayName,
     String? photoUrl,
