@@ -12,18 +12,7 @@ class HomePage extends StatelessWidget {
 
     return ListView(
       children: [
-        const SizedBox(height: 8),
-        Text(
-          'Cocoshiba Web',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'ブラウザからログインして、会員向け機能にアクセスできます。',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
+        const _HeroSection(),
         const SizedBox(height: 24),
         Card(
           child: Padding(
@@ -84,6 +73,94 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: 24),
         const _QuickLinks(),
       ],
+    );
+  }
+}
+
+class _HeroSection extends StatelessWidget {
+  const _HeroSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = (constraints.maxWidth * 0.45).clamp(320.0, 520.0);
+        return SizedBox(
+          width: double.infinity,
+          height: height,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/images/books_hero.jpeg',
+                fit: BoxFit.cover,
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.35),
+                      Colors.black.withOpacity(0.6),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '人をつなぐ街のブックカフェ',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    Column(
+                      children: [
+                        Text(
+                          'Antenna Books & Cafe',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        Text(
+                          'ココシバ',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displayLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'アーティスト、物作り、ノウハウなど、個々人が持っている能力をより活かせる場所、それがAntenna Books & Cafe ココシバです。\n個々の「やってみよう」という気持ちを後押しをして、そこで何か表現して人同士の関係が生まれる、そんなカフェを目指しています。',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

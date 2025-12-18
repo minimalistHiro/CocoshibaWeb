@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 const cocoshibaMainColor = Color(0xFF2E9463);
 const cocoshibaSubColor = Color(0xFFFFFBD2);
 const cocoshibaBackgroundColor = Colors.white;
+const storeDisplayName = 'Antenna Books & Cafe ココシバ';
 
 class CocoshibaWebApp extends StatefulWidget {
   const CocoshibaWebApp({super.key, required this.auth});
@@ -45,7 +46,7 @@ class _CocoshibaWebAppState extends State<CocoshibaWebApp> {
     return AppServices(
       auth: widget.auth,
       child: MaterialApp.router(
-        title: 'Cocoshiba',
+        title: storeDisplayName,
         theme: ThemeData(
           colorScheme: baseColorScheme.copyWith(
             surface: cocoshibaBackgroundColor,

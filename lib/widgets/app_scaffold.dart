@@ -68,10 +68,17 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 onTap: () => context.go(CocoshibaPaths.home),
                 child: Row(
                   children: [
-                    const Icon(Icons.ramen_dining),
+                    ClipOval(
+                      child: Image.asset(
+                        'assets/images/cocoshiba_icon.png',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Text(
-                      'Cocoshiba',
+                      storeDisplayName,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
