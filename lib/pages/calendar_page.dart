@@ -5,14 +5,25 @@ import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:flutter/material.dart';
 
-class CalendarPage extends StatefulWidget {
+class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
 
   @override
-  State<CalendarPage> createState() => _CalendarPageState();
+  Widget build(BuildContext context) {
+    return const CalendarView();
+  }
 }
 
-class _CalendarPageState extends State<CalendarPage> {
+class CalendarView extends StatefulWidget {
+  const CalendarView({super.key, this.embedded = false});
+
+  final bool embedded;
+
+  @override
+  State<CalendarView> createState() => _CalendarViewState();
+}
+
+class _CalendarViewState extends State<CalendarView> {
   final EventService _eventService = EventService();
 
   late final DateTime _startDate;
@@ -91,95 +102,30 @@ class _CalendarPageState extends State<CalendarPage> {
         final grouped = _groupEvents(events);
         final selectedEvents = _eventsForDate(grouped, _selectedDate);
 
+        final content = _CalendarContent(
+          calendarHeight: calendarHeight,
+          header: _buildHeader(context, theme, currentMonth),
+          snapshot: snapshot,
+          groupedEvents: grouped,
+          selectedEvents: selectedEvents,
+          selectedDate: _selectedDate,
+          onSelectDate: (date) => setState(() => _selectedDate = date),
+          onTapEvent: (event) => _openEventDetail(context, event),
+          weekdayLabel: _weekdayLabel,
+          monthCount: _monthCount,
+          pageController: _pageController,
+          monthForIndex: _monthForIndex,
+          eventsForMonth: (month) => _eventsForMonth(grouped, month),
+          embedded: widget.embedded,
+          onPageChanged: (index) => setState(() => _currentPage = index),
+        );
+
+        if (widget.embedded) return content;
+
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 32),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: _buildHeader(context, theme, currentMonth),
-                ),
-                if (snapshot.hasError)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                    child: Card(
-                      color: theme.colorScheme.errorContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              color: theme.colorScheme.onErrorContainer,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'カレンダー情報の取得に失敗しました。\n${snapshot.error}',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onErrorContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                SizedBox(
-                  height: calendarHeight,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _monthCount,
-                    onPageChanged: (index) =>
-                        setState(() => _currentPage = index),
-                    itemBuilder: (context, index) {
-                      final month = _monthForIndex(index);
-                      return Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 860),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 8,
-                            ),
-                            child: Column(
-                              children: [
-                                const _WeekdayHeader(),
-                                const SizedBox(height: 12),
-                                Expanded(
-                                  child: _MonthGrid(
-                                    month: month,
-                                    selectedDate: _selectedDate,
-                                    eventsForMonth:
-                                        _eventsForMonth(grouped, month),
-                                    onSelectDate: (date) {
-                                      setState(() => _selectedDate = date);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
-                  child: _EventList(
-                    selectedDate: _selectedDate,
-                    events: selectedEvents,
-                    weekdayLabel: _weekdayLabel,
-                    isLoading:
-                        snapshot.connectionState == ConnectionState.waiting,
-                    onTap: (event) => _openEventDetail(context, event),
-                  ),
-                ),
-              ],
-            ),
+            child: content,
           ),
         );
       },
@@ -305,6 +251,133 @@ class _CalendarPageState extends State<CalendarPage> {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
     );
+  }
+}
+
+class _CalendarContent extends StatelessWidget {
+  const _CalendarContent({
+    required this.calendarHeight,
+    required this.header,
+    required this.snapshot,
+    required this.groupedEvents,
+    required this.selectedEvents,
+    required this.selectedDate,
+    required this.onSelectDate,
+    required this.onTapEvent,
+    required this.weekdayLabel,
+    required this.monthCount,
+    required this.pageController,
+    required this.monthForIndex,
+    required this.eventsForMonth,
+    required this.embedded,
+    required this.onPageChanged,
+  });
+
+  final double calendarHeight;
+  final Widget header;
+  final AsyncSnapshot<List<CalendarEvent>> snapshot;
+  final Map<String, List<CalendarEvent>> groupedEvents;
+  final List<CalendarEvent> selectedEvents;
+  final DateTime? selectedDate;
+  final ValueChanged<DateTime> onSelectDate;
+  final void Function(CalendarEvent event) onTapEvent;
+  final String Function(int weekday) weekdayLabel;
+  final int monthCount;
+  final PageController pageController;
+  final DateTime Function(int index) monthForIndex;
+  final Map<int, List<CalendarEvent>> Function(DateTime month) eventsForMonth;
+  final bool embedded;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final content = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          child: header,
+        ),
+        if (snapshot.hasError)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Card(
+              color: theme.colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'カレンダー情報の取得に失敗しました。\n${snapshot.error}',
+                        style: TextStyle(
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        SizedBox(
+          height: calendarHeight,
+          child: PageView.builder(
+            controller: pageController,
+            itemCount: monthCount,
+            onPageChanged: onPageChanged,
+            itemBuilder: (context, index) {
+              final month = monthForIndex(index);
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 860),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    child: Column(
+                      children: [
+                        const _WeekdayHeader(),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: _MonthGrid(
+                            month: month,
+                            selectedDate: selectedDate,
+                            eventsForMonth: eventsForMonth(month),
+                            onSelectDate: onSelectDate,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+          child: _EventList(
+            selectedDate: selectedDate,
+            events: selectedEvents,
+            weekdayLabel: weekdayLabel,
+            isLoading: snapshot.connectionState == ConnectionState.waiting,
+            onTap: onTapEvent,
+          ),
+        ),
+      ],
+    );
+
+    if (embedded) return content;
+
+    return content;
   }
 }
 
