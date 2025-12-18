@@ -9,11 +9,20 @@ import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
 import 'package:cocoshibaweb/pages/login_page.dart';
 import 'package:cocoshibaweb/pages/menu_page.dart';
+import 'package:cocoshibaweb/pages/admin/closed_days_settings_page.dart';
+import 'package:cocoshibaweb/pages/admin/existing_event_form_page.dart';
+import 'package:cocoshibaweb/pages/admin/existing_events_page.dart';
+import 'package:cocoshibaweb/pages/admin/menu_form_page.dart';
+import 'package:cocoshibaweb/pages/admin/menu_management_page.dart';
+import 'package:cocoshibaweb/pages/admin/owner_settings_page.dart';
+import 'package:cocoshibaweb/pages/admin/user_chat_support_page.dart';
+import 'package:cocoshibaweb/pages/admin/user_chat_thread_page.dart';
 import 'package:cocoshibaweb/pages/profile_edit_page.dart';
 import 'package:cocoshibaweb/pages/signup_page.dart';
 import 'package:cocoshibaweb/pages/store_page.dart';
 import 'package:cocoshibaweb/pages/support_help_page.dart';
 import 'package:cocoshibaweb/widgets/app_scaffold.dart';
+import 'package:cocoshibaweb/models/user_chat_models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +41,12 @@ class CocoshibaPaths {
   static const loginInfoUpdate = '/_/login-info';
   static const supportHelp = '/_/support';
   static const faq = '/_/faq';
+
+  static const adminChat = '/_/admin/chat';
+  static const adminClosedDays = '/_/admin/closed-days';
+  static const adminOwnerSettings = '/_/admin/owner-settings';
+  static const adminMenu = '/_/admin/menu';
+  static const adminExistingEvents = '/_/admin/existing-events';
 }
 
 class AuthRefreshNotifier extends ChangeNotifier {
@@ -127,6 +142,61 @@ class CocoshibaRouter {
                 GoRoute(
                   path: CocoshibaPaths.faq,
                   builder: (context, state) => const FaqPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.adminChat,
+                  builder: (context, state) => UserChatSupportPage(),
+                  routes: [
+                    GoRoute(
+                      path: ':threadId',
+                      builder: (context, state) => UserChatThreadPage(
+                        threadId: state.pathParameters['threadId'] ?? '',
+                        initialThread: state.extra is UserChatThread
+                            ? state.extra as UserChatThread
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.adminClosedDays,
+                  builder: (context, state) => const ClosedDaysSettingsPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.adminOwnerSettings,
+                  builder: (context, state) => const OwnerSettingsPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.adminMenu,
+                  builder: (context, state) => const MenuManagementPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      builder: (context, state) => const MenuFormPage(),
+                    ),
+                    GoRoute(
+                      path: 'edit/:id',
+                      builder: (context, state) => MenuFormPage(
+                        menuId: state.pathParameters['id'],
+                      ),
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.adminExistingEvents,
+                  builder: (context, state) => const ExistingEventsPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      builder: (context, state) => const ExistingEventFormPage(),
+                    ),
+                    GoRoute(
+                      path: 'edit/:id',
+                      builder: (context, state) => ExistingEventFormPage(
+                        eventId: state.pathParameters['id'],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

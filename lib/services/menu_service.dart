@@ -17,4 +17,46 @@ class MenuService {
               snapshot.docs.map(MenuItem.fromDocument).toList(growable: false),
         );
   }
+
+  Future<MenuItem?> fetchMenu(String id) async {
+    final doc = await _menusRef.doc(id).get();
+    if (!doc.exists) return null;
+    return MenuItem.fromDocument(doc);
+  }
+
+  Future<String> createMenu({
+    required String name,
+    required int price,
+    required MenuCategory category,
+    String? imageUrl,
+  }) async {
+    final doc = _menusRef.doc();
+    await doc.set({
+      'name': name.trim(),
+      'price': price,
+      'category': category.firestoreValue,
+      'imageUrl': (imageUrl ?? '').trim().isEmpty ? null : imageUrl!.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return doc.id;
+  }
+
+  Future<void> updateMenu(
+    String id, {
+    required String name,
+    required int price,
+    required MenuCategory category,
+    String? imageUrl,
+  }) async {
+    await _menusRef.doc(id).set({
+      'name': name.trim(),
+      'price': price,
+      'category': category.firestoreValue,
+      'imageUrl': (imageUrl ?? '').trim().isEmpty ? null : imageUrl!.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteMenu(String id) => _menusRef.doc(id).delete();
 }

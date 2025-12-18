@@ -1,6 +1,8 @@
 import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/router.dart';
+import 'package:cocoshibaweb/services/user_profile_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,6 +26,24 @@ Future<bool?> _confirmSignOut(BuildContext context) {
   );
 }
 
+bool _isOwnerProfile(Map<String, dynamic>? profile) {
+  if (profile == null) return false;
+
+  final isOwner = profile['isOwner'];
+  if (isOwner is bool) return isOwner;
+
+  final owner = profile['owner'];
+  if (owner is bool) return owner;
+
+  final role = profile['role'];
+  if (role is String) {
+    final normalized = role.trim().toLowerCase();
+    if (normalized == 'owner' || normalized == 'オーナー') return true;
+  }
+
+  return false;
+}
+
 Future<void> _showAccountItemsDialog(
   BuildContext context, {
   required AuthUser user,
@@ -35,6 +55,10 @@ Future<void> _showAccountItemsDialog(
   final email = (user.email ?? '').trim();
   final headerLabel =
       name.isNotEmpty ? name : (email.isNotEmpty ? email : 'アカウント');
+  final canReadProfile = Firebase.apps.isNotEmpty;
+  final profileFuture = canReadProfile
+      ? UserProfileService().fetchProfile(user.uid)
+      : Future<Map<String, dynamic>?>.value(null);
 
   Widget sectionHeader(String title) {
     return Padding(
@@ -77,73 +101,119 @@ Future<void> _showAccountItemsDialog(
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(headerLabel),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 560),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              sectionHeader('アカウント設定'),
-              linkItem(
-                Icons.person_outline,
-                'プロフィール編集',
-                subtitle: '名前・アイコン・自己紹介を編集',
-                onTap: () {
-                  Navigator.of(dialogContext).pop();
-                  rootContext.go(CocoshibaPaths.profileEdit);
-                },
-              ),
-              linkItem(
-                Icons.lock_outline,
-                'ログイン情報変更',
-                subtitle: 'パスワードを更新',
-                onTap: () {
-                  Navigator.of(dialogContext).pop();
-                  rootContext.go(CocoshibaPaths.loginInfoUpdate);
-                },
-              ),
-              sectionHeader('データとサポート'),
-              item(Icons.privacy_tip_outlined, 'データとプライバシー',
-                  subtitle: 'データの確認・エクスポート・削除'),
-              linkItem(
-                Icons.help_outline,
-                'サポート・ヘルプ',
-                subtitle: 'お問い合わせ・FAQ・ポリシー',
-                onTap: () {
-                  Navigator.of(dialogContext).pop();
-                  rootContext.go(CocoshibaPaths.supportHelp);
-                },
-              ),
-              sectionHeader('管理者設定（管理者のみ）'),
-              item(Icons.support_agent_outlined, 'ユーザーチャットサポート',
-                  subtitle: 'ユーザーとのチャット履歴を確認'),
-              item(Icons.dashboard_customize_outlined, 'ホーム画面編集',
-                  subtitle: 'ホームのページを追加・整理'),
-              item(Icons.local_offer_outlined, 'キャンペーン編集',
-                  subtitle: '掲載・開催期間を管理'),
-              item(Icons.event_busy_outlined, '定休日設定',
-                  subtitle: '休業日をカレンダーで管理'),
-              item(Icons.admin_panel_settings_outlined, 'オーナー設定',
-                  subtitle: 'ポイント還元率・店舗情報の管理'),
-              item(Icons.restaurant_menu_outlined, 'メニュー管理',
-                  subtitle: 'メニュー一覧の編集・追加'),
-              item(Icons.edit_calendar_outlined, '既存イベント編集',
-                  subtitle: '公開済みイベントの内容を変更'),
-              const SizedBox(height: 8),
-              item(Icons.logout, 'ログアウト'),
-              item(Icons.delete_forever, 'アカウント削除'),
-            ],
+    builder: (dialogContext) => FutureBuilder<Map<String, dynamic>?>(
+      future: profileFuture,
+      builder: (context, snapshot) {
+        final isOwner = canReadProfile && _isOwnerProfile(snapshot.data);
+        final children = <Widget>[
+          sectionHeader('アカウント設定'),
+          linkItem(
+            Icons.person_outline,
+            'プロフィール編集',
+            subtitle: '名前・アイコン・自己紹介を編集',
+            onTap: () {
+              Navigator.of(dialogContext).pop();
+              rootContext.go(CocoshibaPaths.profileEdit);
+            },
           ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('閉じる'),
-        ),
-      ],
+          linkItem(
+            Icons.lock_outline,
+            'ログイン情報変更',
+            subtitle: 'パスワードを更新',
+            onTap: () {
+              Navigator.of(dialogContext).pop();
+              rootContext.go(CocoshibaPaths.loginInfoUpdate);
+            },
+          ),
+          sectionHeader('データとサポート'),
+          item(
+            Icons.privacy_tip_outlined,
+            'データとプライバシー',
+            subtitle: 'データの確認・エクスポート・削除',
+          ),
+          linkItem(
+            Icons.help_outline,
+            'サポート・ヘルプ',
+            subtitle: 'お問い合わせ・FAQ・ポリシー',
+            onTap: () {
+              Navigator.of(dialogContext).pop();
+              rootContext.go(CocoshibaPaths.supportHelp);
+            },
+          ),
+        ];
+
+        if (isOwner) {
+          children.addAll([
+            sectionHeader('管理者設定（管理者のみ）'),
+            linkItem(
+              Icons.support_agent_outlined,
+              'ユーザーチャットサポート',
+              subtitle: 'ユーザーとのチャット履歴を確認',
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                rootContext.go(CocoshibaPaths.adminChat);
+              },
+            ),
+            linkItem(
+              Icons.event_busy_outlined,
+              '定休日設定',
+              subtitle: '休業日をカレンダーで管理',
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                rootContext.go(CocoshibaPaths.adminClosedDays);
+              },
+            ),
+            linkItem(
+              Icons.admin_panel_settings_outlined,
+              'オーナー設定',
+              subtitle: 'ポイント還元率・店舗情報の管理',
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                rootContext.go(CocoshibaPaths.adminOwnerSettings);
+              },
+            ),
+            linkItem(
+              Icons.restaurant_menu_outlined,
+              'メニュー編集',
+              subtitle: 'メニュー一覧の編集・追加',
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                rootContext.go(CocoshibaPaths.adminMenu);
+              },
+            ),
+            linkItem(
+              Icons.edit_calendar_outlined,
+              '既存イベント編集',
+              subtitle: '公開済みイベントの内容を変更',
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                rootContext.go(CocoshibaPaths.adminExistingEvents);
+              },
+            ),
+          ]);
+        }
+
+        children.add(const SizedBox(height: 8));
+
+        return AlertDialog(
+          title: Text(headerLabel),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 560),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: children,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+          ],
+        );
+      },
     ),
   );
 }
