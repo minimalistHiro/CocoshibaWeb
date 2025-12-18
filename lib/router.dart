@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:cocoshibaweb/auth/auth_service.dart';
-import 'package:cocoshibaweb/pages/account_page.dart';
 import 'package:cocoshibaweb/pages/calendar_page.dart';
+import 'package:cocoshibaweb/pages/faq_page.dart';
 import 'package:cocoshibaweb/pages/home_page.dart';
+import 'package:cocoshibaweb/pages/login_info_update_page.dart';
 import 'package:cocoshibaweb/pages/login_page.dart';
 import 'package:cocoshibaweb/pages/menu_page.dart';
+import 'package:cocoshibaweb/pages/profile_edit_page.dart';
 import 'package:cocoshibaweb/pages/signup_page.dart';
 import 'package:cocoshibaweb/pages/store_page.dart';
+import 'package:cocoshibaweb/pages/support_help_page.dart';
 import 'package:cocoshibaweb/widgets/app_scaffold.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +24,10 @@ class CocoshibaPaths {
 
   static const login = '/_/login';
   static const signup = '/_/signup';
-  static const account = '/_/account';
+  static const profileEdit = '/_/profile/edit';
+  static const loginInfoUpdate = '/_/login-info';
+  static const supportHelp = '/_/support';
+  static const faq = '/_/faq';
 }
 
 class AuthRefreshNotifier extends ChangeNotifier {
@@ -51,12 +57,6 @@ class CocoshibaRouter {
 
             final isAuthPage =
                 path == CocoshibaPaths.login || path == CocoshibaPaths.signup;
-            final isAccountPage = path == CocoshibaPaths.account;
-
-            if (!isLoggedIn && isAccountPage) {
-              final from = Uri.encodeComponent(state.uri.toString());
-              return '${CocoshibaPaths.login}?from=$from';
-            }
 
             if (isLoggedIn && isAuthPage) {
               final rawFrom = state.uri.queryParameters['from'];
@@ -101,8 +101,20 @@ class CocoshibaRouter {
                   ),
                 ),
                 GoRoute(
-                  path: CocoshibaPaths.account,
-                  builder: (context, state) => const AccountPage(),
+                  path: CocoshibaPaths.profileEdit,
+                  builder: (context, state) => const ProfileEditPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.loginInfoUpdate,
+                  builder: (context, state) => const LoginInfoUpdatePage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.supportHelp,
+                  builder: (context, state) => const SupportHelpPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.faq,
+                  builder: (context, state) => const FaqPage(),
                 ),
               ],
             ),

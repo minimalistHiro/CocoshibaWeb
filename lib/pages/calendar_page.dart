@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 class CalendarPage extends StatelessWidget {
@@ -24,7 +25,10 @@ class CalendarView extends StatefulWidget {
 }
 
 class _CalendarViewState extends State<CalendarView> {
-  final EventService _eventService = EventService();
+  EventService? _eventService;
+
+  static final DateTime _fixedStartDate = DateTime(2025, 12, 1);
+  static final DateTime _fixedEndDate = DateTime(2026, 12, 31);
 
   late final DateTime _startDate;
   late final DateTime _endDate;
@@ -40,8 +44,8 @@ class _CalendarViewState extends State<CalendarView> {
     super.initState();
 
     final now = DateTime.now();
-    _startDate = DateTime(now.year, 1, 1);
-    _endDate = DateTime(now.year + 1, 12, 31);
+    _startDate = _fixedStartDate;
+    _endDate = _fixedEndDate;
 
     _monthCount = (_endDate.year - _startDate.year) * 12 +
         (_endDate.month - _startDate.month) +
@@ -51,8 +55,13 @@ class _CalendarViewState extends State<CalendarView> {
     _pageController = PageController(initialPage: _currentPage);
     _selectedDate = _clampDate(now);
 
-    _eventsStream =
-        _eventService.watchEvents(startDate: _startDate, endDate: _endDate);
+    if (Firebase.apps.isEmpty) {
+      _eventsStream = Stream.value(const <CalendarEvent>[]);
+    } else {
+      _eventService = EventService();
+      _eventsStream = _eventService!
+          .watchEvents(startDate: _startDate, endDate: _endDate);
+    }
   }
 
   @override
@@ -137,6 +146,8 @@ class _CalendarViewState extends State<CalendarView> {
     ThemeData theme,
     DateTime currentMonth,
   ) {
+    final hasPrev = _currentPage > 0;
+    final hasNext = _currentPage < _monthCount - 1;
     final textColor = theme.colorScheme.onSurface;
     final subTextColor = theme.colorScheme.onSurfaceVariant;
 
@@ -161,12 +172,14 @@ class _CalendarViewState extends State<CalendarView> {
         const SizedBox(height: 12),
         Row(
           children: [
-            IconButton(
-              onPressed:
-                  _currentPage > 0 ? () => _goToPage(_currentPage - 1) : null,
-              icon: Icon(Icons.chevron_left, color: subTextColor),
-              tooltip: '前の月',
-            ),
+            if (hasPrev)
+              IconButton(
+                onPressed: () => _goToPage(_currentPage - 1),
+                icon: Icon(Icons.chevron_left, color: subTextColor),
+                tooltip: '前の月',
+              )
+            else
+              const SizedBox(width: 48, height: 48),
             Expanded(
               child: Column(
                 children: [
@@ -188,13 +201,14 @@ class _CalendarViewState extends State<CalendarView> {
                 ],
               ),
             ),
-            IconButton(
-              onPressed: _currentPage < _monthCount - 1
-                  ? () => _goToPage(_currentPage + 1)
-                  : null,
-              icon: Icon(Icons.chevron_right, color: subTextColor),
-              tooltip: '次の月',
-            ),
+            if (hasNext)
+              IconButton(
+                onPressed: () => _goToPage(_currentPage + 1),
+                icon: Icon(Icons.chevron_right, color: subTextColor),
+                tooltip: '次の月',
+              )
+            else
+              const SizedBox(width: 48, height: 48),
           ],
         ),
       ],
