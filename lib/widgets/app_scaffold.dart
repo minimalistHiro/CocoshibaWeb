@@ -148,11 +148,6 @@ Future<void> _showAccountItemsDialog(
 }
 
 Widget _buildUserAvatar(AuthUser user, {double radius = 16}) {
-  final email = (user.email ?? '').trim();
-  final displayName = (user.displayName ?? '').trim();
-  final initialSource =
-      displayName.isNotEmpty ? displayName : (email.isNotEmpty ? email : '?');
-  final initial = initialSource.isNotEmpty ? initialSource.substring(0, 1) : '?';
   final photoUrl = (user.photoUrl ?? '').trim();
 
   if (photoUrl.isNotEmpty) {
@@ -161,19 +156,13 @@ Widget _buildUserAvatar(AuthUser user, {double radius = 16}) {
       foregroundImage: NetworkImage(photoUrl),
       backgroundColor: Colors.grey.shade200,
       onForegroundImageError: (_, __) {},
-      child: Text(
-        initial.toUpperCase(),
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
+      child: Icon(Icons.person_outline, size: radius * 1.2),
     );
   }
 
   return CircleAvatar(
     radius: radius,
-    child: Text(
-      initial.toUpperCase(),
-      style: const TextStyle(fontWeight: FontWeight.w800),
-    ),
+    child: Icon(Icons.person_outline, size: radius * 1.2),
   );
 }
 
@@ -214,13 +203,16 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 16,
       title: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 900;
+          // 画面幅を狭めた時にナビゲーションがオーバーフローしやすいので、
+          // 余裕を持って早めにコンパクト表示へ切り替える。
+          final isCompact = constraints.maxWidth < 1040;
 
           return Row(
             children: [
               InkWell(
                 onTap: () => context.go(CocoshibaPaths.home),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     ClipOval(
                       child: Image.asset(
@@ -231,11 +223,20 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      storeDisplayName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        // Row の子は横方向が unbounded になりやすいので、
+                        // 明示的に最大幅を持たせて省略表示できるようにする。
+                        maxWidth: isCompact ? 260 : 340,
+                      ),
+                      child: Text(
+                        storeDisplayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -331,12 +332,6 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     return Row(
                       children: [
                         IconButton(
-                          tooltip: 'アカウント',
-                          onPressed: () =>
-                              _showAccountItemsDialog(context, user: user),
-                          icon: _buildUserAvatar(user),
-                        ),
-                        IconButton(
                           tooltip: 'ログアウト',
                           onPressed: () async {
                             final confirmed = await _confirmSignOut(context);
@@ -348,18 +343,18 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                           },
                           icon: const Icon(Icons.logout),
                         ),
+                        IconButton(
+                          tooltip: 'アカウント',
+                          onPressed: () =>
+                              _showAccountItemsDialog(context, user: user),
+                          icon: _buildUserAvatar(user),
+                        ),
                       ],
                     );
                   }
 
                   return Row(
                     children: [
-                      IconButton(
-                        tooltip: 'アカウント',
-                        onPressed: () =>
-                            _showAccountItemsDialog(context, user: user),
-                        icon: _buildUserAvatar(user),
-                      ),
                       const SizedBox(width: 8),
                       OutlinedButton(
                         onPressed: () async {
@@ -371,6 +366,13 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                           }
                         },
                         child: const Text('ログアウト'),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: 'アカウント',
+                        onPressed: () =>
+                            _showAccountItemsDialog(context, user: user),
+                        icon: _buildUserAvatar(user),
                       ),
                     ],
                   );

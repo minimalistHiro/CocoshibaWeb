@@ -4,9 +4,9 @@ import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/widgets/event_card.dart';
+import 'package:cocoshibaweb/widgets/store_info_card.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -78,74 +78,13 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
         ],
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: SizedBox(
-                      width: 110,
-                      height: 110,
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: Image.asset('assets/images/IMG_1385.jpeg'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Antenna Books & Cafe ココシバ\n'
-                          '電話番号：080-6050-7194\n'
-                          'メールアドレス：h.kaneko.baseball@icloud.com',
-                          style:
-                              theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: _openGoogleMaps,
-                          child: Text(
-                            '住所：埼玉県川口市芝5-5-13（Googleマップで開く）',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              height: 1.5,
-                              color: theme.colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '営業時間：11:00〜18:00（月、火定休）',
-                          style:
-                              theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: StoreInfoCard(showActions: false),
         ),
       ],
     );
   }
-}
-
-final Uri _mapsUri = Uri.parse(
-  'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('Antenna Books & Cafe ココシバ')}',
-);
-
-Future<void> _openGoogleMaps() async {
-  await launchUrl(_mapsUri, mode: LaunchMode.externalApplication);
 }
 
 class _HeroSection extends StatelessWidget {
