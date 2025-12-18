@@ -19,26 +19,27 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final firebaseReady = Firebase.apps.isNotEmpty;
+    final width = MediaQuery.sizeOf(context).width;
+    final lowerImageHeight = (width * 0.55).clamp(240.0, 520.0);
 
     return ListView(
       children: [
         const _HeroSection(),
         const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: lowerImageHeight,
+          child: Image.asset(
+            'assets/images/IMG_3803.jpeg',
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset('assets/images/IMG_3803.jpeg'),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'ココシバは、数々のイベントを開催しております。ボードゲーム会、ハンドメイド・スローマーケット、クッキング&パーティ、スナック木曜日、アーティストLIVE、読書会などなど。以下のカレンダーより、予約することができます。',
-                style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-              ),
-            ],
+          child: Text(
+            'ココシバは、数々のイベントを開催しております。ボードゲーム会、ハンドメイド・スローマーケット、クッキング&パーティ、スナック木曜日、アーティストLIVE、読書会などなど。以下のカレンダーより、予約することができます。',
+            style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
           ),
         ),
         const SizedBox(height: 24),
@@ -96,6 +97,8 @@ class _HeroSection extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = (constraints.maxWidth * 0.45).clamp(320.0, 520.0);
+        final introImageHeight =
+            (constraints.maxWidth * 0.5).clamp(240.0, 440.0);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -147,6 +150,27 @@ class _HeroSection extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: introImageHeight,
+              child: Image.asset(
+                'assets/images/IMG_0038.jpeg',
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                '当店は、ふらっと立ち寄れるブックカフェです。\n'
+                '店内の棚に並ぶ本の中から、気になる一冊を自由に手に取り、ご自身の席でコーヒーを飲みながらゆっくりとお読みいただけます。読書の合間に一息ついたり、気分転換にページをめくったり——日常の中に“静かな没頭”の時間をつくれる場所です。\n'
+                'また、店内の本は一部販売も行っております。出会った一冊を、そのままお持ち帰りいただくことも可能です。\n'
+                'おひとりでも、ご友人とでも。ぜひお気軽にお越しください。',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(height: 1.8),
               ),
             ),
           ],
