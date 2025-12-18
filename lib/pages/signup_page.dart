@@ -1,5 +1,6 @@
 import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/router.dart';
+import 'package:cocoshibaweb/widgets/google_sign_in_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,6 +55,42 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                   ),
                   const SizedBox(height: 12),
+                  GoogleSignInButton(
+                    label: 'Googleで続ける',
+                    isBusy: _isBusy,
+                    onPressed: () async {
+                      setState(() => _isBusy = true);
+                      try {
+                        await auth.signInWithGoogle();
+                        if (!context.mounted) return;
+                        final from = widget.from;
+                        if (from != null && from.isNotEmpty) {
+                          context.go(Uri.decodeComponent(from));
+                        } else {
+                          context.go(CocoshibaPaths.home);
+                        }
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Googleログインに失敗しました: $e')),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _isBusy = false);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('または'),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(

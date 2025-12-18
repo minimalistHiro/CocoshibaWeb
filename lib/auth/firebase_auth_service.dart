@@ -1,10 +1,26 @@
 import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class FirebaseAuthService implements AuthService {
   FirebaseAuthService(this._auth);
 
   final FirebaseAuth _auth;
+
+  @override
+  Future<void> signInWithGoogle() async {
+    final provider = GoogleAuthProvider()
+      ..addScope('email')
+      ..setCustomParameters(<String, String>{
+        'prompt': 'select_account',
+      });
+
+    if (!kIsWeb) {
+      throw UnsupportedError('Google sign-in is only supported on web in this app.');
+    }
+
+    await _auth.signInWithPopup(provider);
+  }
 
   @override
   Stream<AuthUser?> get onAuthStateChanged =>
