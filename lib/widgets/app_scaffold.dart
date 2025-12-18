@@ -1,4 +1,5 @@
 import 'package:cocoshibaweb/app.dart';
+import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/router.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,159 @@ Future<bool?> _confirmSignOut(BuildContext context) {
           child: const Text('ログアウト'),
         ),
       ],
+    ),
+  );
+}
+
+Future<void> _showAccountItemsDialog(
+  BuildContext context, {
+  required AuthUser user,
+}) {
+  final rootContext = context;
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final name = (user.displayName ?? '').trim();
+  final email = (user.email ?? '').trim();
+  final headerLabel =
+      name.isNotEmpty ? name : (email.isNotEmpty ? email : 'アカウント');
+
+  Widget sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
+      child: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+
+  Widget item(IconData icon, String title, {String? subtitle}) {
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, color: colorScheme.onSurfaceVariant),
+      title: Text(title),
+      subtitle: subtitle == null ? null : Text(subtitle),
+      trailing: const Icon(Icons.chevron_right),
+      enabled: false,
+    );
+  }
+
+  Widget linkItem(
+    IconData icon,
+    String title, {
+    String? subtitle,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      dense: true,
+      onTap: onTap,
+      leading: Icon(icon, color: colorScheme.onSurfaceVariant),
+      title: Text(title),
+      subtitle: subtitle == null ? null : Text(subtitle),
+      trailing: const Icon(Icons.chevron_right),
+    );
+  }
+
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(headerLabel),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 560),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              sectionHeader('アカウント設定'),
+              linkItem(
+                Icons.person_outline,
+                'プロフィール編集',
+                subtitle: '名前・アイコン・自己紹介を編集',
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  rootContext.go(CocoshibaPaths.profileEdit);
+                },
+              ),
+              linkItem(
+                Icons.lock_outline,
+                'ログイン情報変更',
+                subtitle: 'パスワードを更新',
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  rootContext.go(CocoshibaPaths.loginInfoUpdate);
+                },
+              ),
+              sectionHeader('データとサポート'),
+              item(Icons.privacy_tip_outlined, 'データとプライバシー',
+                  subtitle: 'データの確認・エクスポート・削除'),
+              linkItem(
+                Icons.help_outline,
+                'サポート・ヘルプ',
+                subtitle: 'お問い合わせ・FAQ・ポリシー',
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  rootContext.go(CocoshibaPaths.supportHelp);
+                },
+              ),
+              sectionHeader('管理者設定（管理者のみ）'),
+              item(Icons.support_agent_outlined, 'ユーザーチャットサポート',
+                  subtitle: 'ユーザーとのチャット履歴を確認'),
+              item(Icons.dashboard_customize_outlined, 'ホーム画面編集',
+                  subtitle: 'ホームのページを追加・整理'),
+              item(Icons.local_offer_outlined, 'キャンペーン編集',
+                  subtitle: '掲載・開催期間を管理'),
+              item(Icons.event_busy_outlined, '定休日設定',
+                  subtitle: '休業日をカレンダーで管理'),
+              item(Icons.admin_panel_settings_outlined, 'オーナー設定',
+                  subtitle: 'ポイント還元率・店舗情報の管理'),
+              item(Icons.restaurant_menu_outlined, 'メニュー管理',
+                  subtitle: 'メニュー一覧の編集・追加'),
+              item(Icons.edit_calendar_outlined, '既存イベント編集',
+                  subtitle: '公開済みイベントの内容を変更'),
+              const SizedBox(height: 8),
+              item(Icons.logout, 'ログアウト'),
+              item(Icons.delete_forever, 'アカウント削除'),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('閉じる'),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildUserAvatar(AuthUser user, {double radius = 16}) {
+  final email = (user.email ?? '').trim();
+  final displayName = (user.displayName ?? '').trim();
+  final initialSource =
+      displayName.isNotEmpty ? displayName : (email.isNotEmpty ? email : '?');
+  final initial = initialSource.isNotEmpty ? initialSource.substring(0, 1) : '?';
+  final photoUrl = (user.photoUrl ?? '').trim();
+
+  if (photoUrl.isNotEmpty) {
+    return CircleAvatar(
+      radius: radius,
+      foregroundImage: NetworkImage(photoUrl),
+      backgroundColor: Colors.grey.shade200,
+      onForegroundImageError: (_, __) {},
+      child: Text(
+        initial.toUpperCase(),
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+
+  return CircleAvatar(
+    radius: radius,
+    child: Text(
+      initial.toUpperCase(),
+      style: const TextStyle(fontWeight: FontWeight.w800),
     ),
   );
 }
@@ -167,36 +321,37 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   }
 
                   if (isCompact) {
-                    return PopupMenuButton<String>(
-                      tooltip: 'アカウント',
-                      onSelected: (value) async {
-                        if (value == 'logout') {
-                          final confirmed = await _confirmSignOut(context);
-                          if (confirmed != true) return;
-                          await auth.signOut();
-                          if (context.mounted) {
-                            context.go(CocoshibaPaths.home);
-                          }
-                          return;
-                        }
-                        context.go(value);
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: CocoshibaPaths.account,
-                          child: Text('アカウント管理'),
+                    return Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'アカウント',
+                          onPressed: () =>
+                              _showAccountItemsDialog(context, user: user),
+                          icon: _buildUserAvatar(user),
                         ),
-                        PopupMenuItem(value: 'logout', child: Text('ログアウト')),
+                        IconButton(
+                          tooltip: 'ログアウト',
+                          onPressed: () async {
+                            final confirmed = await _confirmSignOut(context);
+                            if (confirmed != true) return;
+                            await auth.signOut();
+                            if (context.mounted) {
+                              context.go(CocoshibaPaths.home);
+                            }
+                          },
+                          icon: const Icon(Icons.logout),
+                        ),
                       ],
-                      icon: const Icon(Icons.person),
                     );
                   }
 
                   return Row(
                     children: [
-                      TextButton(
-                        onPressed: () => context.go(CocoshibaPaths.account),
-                        child: const Text('アカウント管理'),
+                      IconButton(
+                        tooltip: 'アカウント',
+                        onPressed: () =>
+                            _showAccountItemsDialog(context, user: user),
+                        icon: _buildUserAvatar(user),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton(

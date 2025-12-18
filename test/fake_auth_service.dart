@@ -17,6 +17,27 @@ class FakeAuthService implements AuthService {
   AuthUser? get currentUser => _currentUser;
 
   @override
+  Future<void> updateUserProfile({
+    String? displayName,
+    String? photoUrl,
+  }) async {
+    if (_currentUser == null) return;
+    _currentUser = AuthUser(
+      uid: _currentUser!.uid,
+      email: _currentUser!.email,
+      displayName: displayName ?? _currentUser!.displayName,
+      photoUrl: photoUrl ?? _currentUser!.photoUrl,
+    );
+    _controller.add(_currentUser);
+  }
+
+  @override
+  Future<void> updateLoginInfo({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
+
+  @override
   Future<void> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -53,4 +74,3 @@ class FakeAuthService implements AuthService {
     await _controller.close();
   }
 }
-

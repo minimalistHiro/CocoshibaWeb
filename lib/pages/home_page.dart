@@ -4,17 +4,21 @@ import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/widgets/event_card.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  static final EventService _eventService = EventService();
+  static EventService? _eventService;
+
+  static EventService get eventService => _eventService ??= EventService();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final firebaseReady = Firebase.apps.isNotEmpty;
 
     return ListView(
       children: [
@@ -38,26 +42,42 @@ class HomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(8),
-              child: CalendarView(embedded: true),
+        if (!firebaseReady) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Firebase が初期化されていないため、イベント情報は表示できません。',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: _ReservedEventsSection(),
-        ),
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: _UpcomingEventsSection(),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
+        ] else ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: CalendarView(embedded: true),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _ReservedEventsSection(),
+          ),
+          const SizedBox(height: 24),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _UpcomingEventsSection(),
+          ),
+          const SizedBox(height: 24),
+        ],
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Card(
@@ -234,7 +254,7 @@ class _UpcomingEventsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         StreamBuilder<List<CalendarEvent>>(
-          stream: HomePage._eventService.watchUpcomingEvents(limit: 7),
+          stream: HomePage.eventService.watchUpcomingEvents(limit: 7),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Container(
@@ -330,7 +350,7 @@ class _ReservedEventsSection extends StatelessWidget {
             StreamBuilder<List<CalendarEvent>>(
               stream: user == null
                   ? Stream.value(const <CalendarEvent>[])
-                  : HomePage._eventService.watchReservedEvents(user.uid),
+                  : HomePage.eventService.watchReservedEvents(user.uid),
               builder: (context, reservedSnapshot) {
                 final reservedEvents =
                     (reservedSnapshot.data ?? const <CalendarEvent>[])

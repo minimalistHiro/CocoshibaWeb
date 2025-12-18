@@ -8,10 +8,54 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Stream<AuthUser?> get onAuthStateChanged =>
-      _auth.authStateChanges().map(_mapUser);
+      _auth.userChanges().map(_mapUser);
 
   @override
   AuthUser? get currentUser => _mapUser(_auth.currentUser);
+
+  @override
+  Future<void> updateUserProfile({
+    String? displayName,
+    String? photoUrl,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final normalizedDisplayName = displayName?.trim();
+    final normalizedPhotoUrl = photoUrl?.trim();
+
+    if (normalizedDisplayName != null && normalizedDisplayName.isNotEmpty) {
+      await user.updateDisplayName(normalizedDisplayName);
+    }
+
+    if (normalizedPhotoUrl != null) {
+      await user.updatePhotoURL(normalizedPhotoUrl.isEmpty ? null : normalizedPhotoUrl);
+    }
+
+    await user.reload();
+  }
+
+  @override
+  Future<void> updateLoginInfo({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final email = user.email;
+    if (email == null || email.trim().isEmpty) {
+      throw StateError('Email is not available for re-authentication.');
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: email.trim(),
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword);
+    await user.reload();
+  }
 
   @override
   Future<void> signUpWithEmailAndPassword({
@@ -56,7 +100,11 @@ class FirebaseAuthService implements AuthService {
 
   static AuthUser? _mapUser(User? user) {
     if (user == null) return null;
-    return AuthUser(uid: user.uid, email: user.email);
+    return AuthUser(
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoUrl: user.photoURL,
+    );
   }
 }
-
