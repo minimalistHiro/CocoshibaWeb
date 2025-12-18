@@ -4,6 +4,7 @@ import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/book_order_page.dart';
 import 'package:cocoshibaweb/pages/faq_page.dart';
+import 'package:cocoshibaweb/pages/events_page.dart';
 import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
 import 'package:cocoshibaweb/pages/login_page.dart';
@@ -19,6 +20,7 @@ import 'package:go_router/go_router.dart';
 
 class CocoshibaPaths {
   static const home = '/';
+  static const events = '/events';
   static const calendar = '/calendar';
   static const menu = '/menu';
   static const bookOrder = '/book-order';
@@ -77,6 +79,10 @@ class CocoshibaRouter {
                 GoRoute(
                   path: CocoshibaPaths.home,
                   builder: (context, state) => const HomePage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.events,
+                  builder: (context, state) => const EventsPage(),
                 ),
                 GoRoute(
                   path: CocoshibaPaths.calendar,

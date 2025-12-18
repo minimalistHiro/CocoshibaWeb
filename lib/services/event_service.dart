@@ -11,6 +11,9 @@ class EventService {
   CollectionReference<Map<String, dynamic>> get _eventsRef =>
       _firestore.collection('events');
 
+  CollectionReference<Map<String, dynamic>> get _existingEventsRef =>
+      _firestore.collection('existing_events');
+
   CollectionReference<Map<String, dynamic>> _userReservationsRef(
           String userId) =>
       _firestore
@@ -55,6 +58,28 @@ class EventService {
         .where('startDateTime', isGreaterThanOrEqualTo: startTimestamp)
         .orderBy('startDateTime')
         .limit(limit)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(CalendarEvent.fromDocument)
+              .toList(growable: false),
+        );
+  }
+
+  Stream<List<CalendarEvent>> watchAllEvents({bool descending = true}) {
+    return _eventsRef
+        .orderBy('startDateTime', descending: descending)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(CalendarEvent.fromDocument)
+              .toList(growable: false),
+        );
+  }
+
+  Stream<List<CalendarEvent>> watchAllExistingEvents({bool descending = true}) {
+    return _existingEventsRef
+        .orderBy('startDateTime', descending: descending)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
