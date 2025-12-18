@@ -41,7 +41,8 @@ Future<void> _showAccountItemsDialog(
       padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
       child: Text(
         title,
-        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        style:
+            theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -205,7 +206,8 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
         builder: (context, constraints) {
           // 画面幅を狭めた時にナビゲーションがオーバーフローしやすいので、
           // 余裕を持って早めにコンパクト表示へ切り替える。
-          final isCompact = constraints.maxWidth < 1040;
+          // メニュー項目追加時にオーバーフローしやすいため、閾値はやや広めに取る。
+          final isCompact = constraints.maxWidth < 1180;
 
           return Row(
             children: [
@@ -226,16 +228,22 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     ConstrainedBox(
                       constraints: BoxConstraints(
                         // Row の子は横方向が unbounded になりやすいので、
-                        // 明示的に最大幅を持たせて省略表示できるようにする。
+                        // 明示的に最大幅を持たせて縮小表示できるようにする。
                         maxWidth: isCompact ? 260 : 340,
                       ),
-                      child: Text(
-                        storeDisplayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          storeDisplayName,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.visible,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
                       ),
                     ),
                   ],
@@ -247,6 +255,11 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   label: 'ホーム',
                   to: CocoshibaPaths.home,
                   isActive: path == CocoshibaPaths.home,
+                ),
+                _NavButton(
+                  label: 'イベント',
+                  to: CocoshibaPaths.events,
+                  isActive: path.startsWith(CocoshibaPaths.events),
                 ),
                 _NavButton(
                   label: 'カレンダー',
@@ -277,6 +290,10 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   itemBuilder: (context) => const [
                     PopupMenuItem(
                         value: CocoshibaPaths.home, child: Text('ホーム')),
+                    PopupMenuItem(
+                      value: CocoshibaPaths.events,
+                      child: Text('イベント'),
+                    ),
                     PopupMenuItem(
                       value: CocoshibaPaths.calendar,
                       child: Text('カレンダー'),
