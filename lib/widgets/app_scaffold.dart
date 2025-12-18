@@ -258,6 +258,11 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   isActive: path.startsWith(CocoshibaPaths.menu),
                 ),
                 _NavButton(
+                  label: '本の注文',
+                  to: CocoshibaPaths.bookOrder,
+                  isActive: path.startsWith(CocoshibaPaths.bookOrder),
+                ),
+                _NavButton(
                   label: '店舗情報',
                   to: CocoshibaPaths.store,
                   isActive: path.startsWith(CocoshibaPaths.store),
@@ -277,6 +282,8 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     PopupMenuItem(
                         value: CocoshibaPaths.menu, child: Text('メニュー')),
+                    PopupMenuItem(
+                        value: CocoshibaPaths.bookOrder, child: Text('本の注文')),
                     PopupMenuItem(
                         value: CocoshibaPaths.store, child: Text('店舗情報')),
                   ],
