@@ -1,0 +1,18 @@
+[
+  {
+    "origin": [
+      "http://localhost:5000",
+      "http://localhost:53433",
+      "http://localhost:56104",
+      "http://127.0.0.1:5000",
+      "http://127.0.0.1:53433",
+      "http://127.0.0.1:56104",
+      "https://cocoshibaapp.web.app",
+      "https://cocoshibaapp.firebaseapp.com",
+      "https://newcocoshiba.com"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]

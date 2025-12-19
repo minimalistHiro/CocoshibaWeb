@@ -1,4 +1,5 @@
 import 'package:cocoshibaweb/models/calendar_event.dart';
+import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:flutter/material.dart';
 
 class EventCard extends StatelessWidget {
@@ -53,16 +54,10 @@ class EventCard extends StatelessWidget {
       );
 
       if (!hasImage) return placeholder;
-      return Image.network(
-        event.imageUrls.first,
+      return CocoshibaNetworkImage(
+        url: event.imageUrls.first,
         fit: BoxFit.cover,
-        cacheWidth: imageCacheWidth,
-        cacheHeight: imageCacheHeight,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator());
-        },
-        errorBuilder: (context, error, stackTrace) => placeholder,
+        placeholder: placeholder,
       );
     }
 
