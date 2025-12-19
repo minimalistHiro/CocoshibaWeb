@@ -6,6 +6,9 @@ const storePhoneNumber = '080-6050-7194';
 const storeEmailAddress = 'h.kaneko.baseball@icloud.com';
 const storeAddress = '埼玉県川口市芝5-5-13';
 const storeBusinessHours = '11:00〜18:00（月、火定休）';
+const storeInstagramUrl = 'https://www.instagram.com/cocoshiba5513';
+const storeFacebookUrl = 'https://www.facebook.com/cocoshiba5513';
+const storeXUrl = 'https://x.com/cocoshiba5513';
 
 final Uri storeMapsUri = Uri.parse(
   'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(storeDisplayName)}',
@@ -13,6 +16,9 @@ final Uri storeMapsUri = Uri.parse(
 
 final Uri storeTelUri = Uri(scheme: 'tel', path: storePhoneNumber);
 final Uri storeMailUri = Uri(scheme: 'mailto', path: storeEmailAddress);
+final Uri storeInstagramUri = Uri.parse(storeInstagramUrl);
+final Uri storeFacebookUri = Uri.parse(storeFacebookUrl);
+final Uri storeXUri = Uri.parse(storeXUrl);
 
 class StoreInfoCard extends StatelessWidget {
   const StoreInfoCard({
@@ -80,6 +86,35 @@ class StoreInfoCard extends StatelessWidget {
           Text(
             '営業時間：$storeBusinessHours',
             style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'SNS',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => open(storeInstagramUri),
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: const Text('Instagram'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => open(storeFacebookUri),
+                icon: const Icon(Icons.facebook_outlined),
+                label: const Text('Facebook'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => open(storeXUri),
+                icon: const Icon(Icons.alternate_email),
+                label: const Text('X'),
+              ),
+            ],
           ),
           if (showActions) ...[
             const SizedBox(height: 14),
@@ -200,4 +235,3 @@ class _LinkChip extends StatelessWidget {
     );
   }
 }
-
