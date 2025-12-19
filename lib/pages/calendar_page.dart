@@ -6,6 +6,7 @@ import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/router.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/services/owner_service.dart';
+import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -63,8 +64,8 @@ class _CalendarViewState extends State<CalendarView> {
       _eventsStream = Stream.value(const <CalendarEvent>[]);
     } else {
       _eventService = EventService();
-      _eventsStream = _eventService!
-          .watchEvents(startDate: _startDate, endDate: _endDate);
+      _eventsStream =
+          _eventService!.watchEvents(startDate: _startDate, endDate: _endDate);
     }
   }
 
@@ -157,8 +158,7 @@ class _CalendarViewState extends State<CalendarView> {
     DateTime currentMonth, {
     required DateTime? selectedDate,
     required bool showCreateButton,
-  }
-  ) {
+  }) {
     final hasPrev = _currentPage > 0;
     final hasNext = _currentPage < _monthCount - 1;
     final textColor = theme.colorScheme.onSurface;
@@ -314,7 +314,8 @@ class _OwnerCreateEventButton extends StatelessWidget {
         final suffix = date == null ? '' : '?date=${_dateParam(date)}';
 
         return IconButton(
-          onPressed: () => context.push('${CocoshibaPaths.calendarEventCreate}$suffix'),
+          onPressed: () =>
+              context.push('${CocoshibaPaths.calendarEventCreate}$suffix'),
           icon: const Icon(Icons.add_circle_outline),
           tooltip: '新規イベント作成',
         );
@@ -831,17 +832,11 @@ class _EventThumbnail extends StatelessWidget {
     if (imageUrl == null || imageUrl!.isEmpty) return placeholder;
     return SizedBox(
       height: 160,
-      child: Image.network(
-        imageUrl!,
+      child: CocoshibaNetworkImage(
+        url: imageUrl!,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return const SizedBox(
-            height: 160,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        },
-        errorBuilder: (_, __, ___) => placeholder,
+        height: 160,
+        placeholder: placeholder,
       ),
     );
   }

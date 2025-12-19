@@ -18,6 +18,13 @@ class EventService {
   CollectionReference<Map<String, dynamic>> get _existingEventsRef =>
       _firestore.collection('existing_events');
 
+  DocumentReference<Map<String, dynamic>> _eventDoc(
+    String eventId, {
+    required bool isExistingEvent,
+  }) {
+    return (isExistingEvent ? _existingEventsRef : _eventsRef).doc(eventId);
+  }
+
   CollectionReference<Map<String, dynamic>> _userReservationsRef(
           String userId) =>
       _firestore
@@ -122,8 +129,9 @@ class EventService {
       'colorValue': colorValue,
       'capacity': capacity,
       'isClosedDay': isClosedDay,
-      'existingEventId':
-          (existingEventId ?? '').trim().isEmpty ? null : existingEventId!.trim(),
+      'existingEventId': (existingEventId ?? '').trim().isEmpty
+          ? null
+          : existingEventId!.trim(),
       'reservationCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -153,6 +161,89 @@ class EventService {
 
     await _deleteSubcollection(docRef.collection('event_reservations'));
     await docRef.delete();
+  }
+
+  Future<void> deleteExistingEvent(String eventId) async {
+    final docRef = _existingEventsRef.doc(eventId);
+    final snapshot = await docRef.get();
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data() ?? const <String, dynamic>{};
+    final urls = (data['imageUrls'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .where((e) => e.trim().isNotEmpty)
+            .toList(growable: false) ??
+        const <String>[];
+
+    for (final url in urls) {
+      try {
+        await _storage.refFromURL(url).delete();
+      } catch (_) {
+        // ignore cleanup failures
+      }
+    }
+
+    await docRef.delete();
+  }
+
+  Future<CalendarEvent> updateEvent({
+    required String eventId,
+    required bool isExistingEvent,
+    required String name,
+    required String organizer,
+    required DateTime startDateTime,
+    required DateTime endDateTime,
+    required String content,
+    required List<String> imageUrls,
+    required int colorValue,
+    required int capacity,
+    List<LocalImage> images = const <LocalImage>[],
+    bool isClosedDay = false,
+    String? existingEventId,
+  }) async {
+    final docRef = _eventDoc(eventId, isExistingEvent: isExistingEvent);
+    final beforeSnapshot = await docRef.get();
+    final beforeData = beforeSnapshot.data() ?? const <String, dynamic>{};
+    final beforeUrls = (beforeData['imageUrls'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .where((e) => e.trim().isNotEmpty)
+            .toSet() ??
+        <String>{};
+
+    final uploadedUrls = await _uploadEventImages(eventId, images);
+    final mergedUrls = <String>[
+      ...imageUrls.where((e) => e.trim().isNotEmpty),
+      ...uploadedUrls,
+    ];
+
+    await docRef.set({
+      'name': name.trim(),
+      'organizer': organizer.trim(),
+      'startDateTime': Timestamp.fromDate(startDateTime),
+      'endDateTime': Timestamp.fromDate(endDateTime),
+      'content': content.trim(),
+      'imageUrls': mergedUrls,
+      'colorValue': colorValue,
+      'capacity': capacity,
+      'isClosedDay': isClosedDay,
+      'existingEventId': (existingEventId ?? '').trim().isEmpty
+          ? null
+          : existingEventId!.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    final afterUrlSet = mergedUrls.toSet();
+    final removedUrls = beforeUrls.difference(afterUrlSet);
+    for (final url in removedUrls) {
+      try {
+        await _storage.refFromURL(url).delete();
+      } catch (_) {
+        // ignore cleanup failures
+      }
+    }
+
+    final afterSnapshot = await docRef.get();
+    return CalendarEvent.fromDocument(afterSnapshot);
   }
 
   Future<void> _deleteSubcollection(

@@ -1,5 +1,6 @@
 import 'package:cocoshibaweb/models/menu_item.dart';
 import 'package:cocoshibaweb/services/menu_service.dart';
+import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:flutter/material.dart';
 
 class MenuPage extends StatefulWidget {
@@ -205,34 +206,24 @@ class _MenuImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final placeholder = Container(
+      color: Colors.grey.shade200,
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        color: Colors.grey.shade500,
+        size: 36,
+      ),
+    );
+
     if (imageUrl == null || imageUrl!.isEmpty) {
-      return Container(
-        color: Colors.grey.shade200,
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.image_not_supported_outlined,
-          color: Colors.grey.shade500,
-          size: 36,
-        ),
-      );
+      return placeholder;
     }
 
-    return Image.network(
-      imageUrl!,
+    return CocoshibaNetworkImage(
+      url: imageUrl!,
       fit: BoxFit.cover,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return const Center(child: CircularProgressIndicator());
-      },
-      errorBuilder: (_, __, ___) => Container(
-        color: Colors.grey.shade200,
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.broken_image_outlined,
-          color: Colors.grey.shade500,
-          size: 36,
-        ),
-      ),
+      placeholder: placeholder,
     );
   }
 }

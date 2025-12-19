@@ -1,15 +1,22 @@
 import 'package:cocoshibaweb/models/calendar_event.dart';
+import 'package:cocoshibaweb/pages/event_edit_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/services/owner_service.dart';
 import 'package:cocoshibaweb/services/user_profile_service.dart';
+import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 class EventDetailPage extends StatefulWidget {
-  const EventDetailPage({super.key, required this.event});
+  const EventDetailPage({
+    super.key,
+    required this.event,
+    this.isExistingEvent = false,
+  });
 
   final CalendarEvent event;
+  final bool isExistingEvent;
 
   @override
   State<EventDetailPage> createState() => _EventDetailPageState();
@@ -18,7 +25,7 @@ class EventDetailPage extends StatefulWidget {
 class _EventDetailPageState extends State<EventDetailPage> {
   final EventService _eventService = EventService();
   final UserProfileService _profileService = UserProfileService();
-  late final CalendarEvent _event;
+  late CalendarEvent _event;
   late final Stream<int> _reservationCountStream;
 
   bool _hasReservation = false;
@@ -30,12 +37,18 @@ class _EventDetailPageState extends State<EventDetailPage> {
   void initState() {
     super.initState();
     _event = widget.event;
-    _reservationCountStream =
-        _eventService.watchEventReservationCount(_event.id);
+    _reservationCountStream = widget.isExistingEvent
+        ? Stream.value(0)
+        : _eventService.watchEventReservationCount(_event.id);
     _loadReservationStatus();
   }
 
   Future<void> _loadReservationStatus() async {
+    if (widget.isExistingEvent) {
+      if (mounted) setState(() => _isReservationLoading = false);
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       if (mounted) setState(() => _isReservationLoading = false);
@@ -98,6 +111,13 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Future<void> _toggleReservation() async {
+    if (widget.isExistingEvent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('このイベントは予約できません')),
+      );
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,7 +198,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
     setState(() => _isDeleting = true);
     try {
-      await _eventService.deleteEvent(_event.id);
+      if (widget.isExistingEvent) {
+        await _eventService.deleteExistingEvent(_event.id);
+      } else {
+        await _eventService.deleteEvent(_event.id);
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('イベントを削除しました')),
@@ -208,18 +232,21 @@ class _EventDetailPageState extends State<EventDetailPage> {
         final isReservationBusy =
             _isReservationLoading || _isReservationProcessing || _isDeleting;
         final isReservationButtonDisabled = event.isClosedDay ||
+            widget.isExistingEvent ||
             isEventEnded ||
             (!_hasReservation && isEventFull);
 
         final reservationButtonLabel = event.isClosedDay
             ? '定休日です'
-            : isEventEnded
-                ? 'イベントは終了しました'
-                : _hasReservation
-                    ? '予約を解除する'
-                    : isEventFull
-                        ? '定員に達しました'
-                        : '予約する';
+            : widget.isExistingEvent
+                ? '予約できません'
+                : isEventEnded
+                    ? 'イベントは終了しました'
+                    : _hasReservation
+                        ? '予約を解除する'
+                        : isEventFull
+                            ? '定員に達しました'
+                            : '予約する';
 
         final dateText =
             '${event.startDateTime.year}年${event.startDateTime.month}月${event.startDateTime.day}日（${_weekdayLabel(event.startDateTime.weekday)}）';
@@ -227,6 +254,31 @@ class _EventDetailPageState extends State<EventDetailPage> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('イベント詳細'),
+            actions: [
+              StreamBuilder<bool>(
+                stream: _watchIsOwner(),
+                builder: (context, ownerSnapshot) {
+                  final isOwner = ownerSnapshot.data == true;
+                  if (!isOwner) return const SizedBox.shrink();
+                  return IconButton(
+                    tooltip: '編集',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () async {
+                      final updated = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EventEditPage(
+                            event: _event,
+                            isExistingEvent: widget.isExistingEvent,
+                          ),
+                        ),
+                      );
+                      if (!mounted || updated is! CalendarEvent) return;
+                      setState(() => _event = updated);
+                    },
+                  );
+                },
+              ),
+            ],
           ),
           body: Column(
             children: [
@@ -240,10 +292,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
                         if (event.imageUrls.isNotEmpty)
                           AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: Image.network(
-                              event.imageUrls.first,
+                            child: CocoshibaNetworkImage(
+                              url: event.imageUrls.first,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              placeholder: Container(
                                 color: Colors.grey.shade200,
                                 alignment: Alignment.center,
                                 child: Icon(
@@ -252,12 +304,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                   size: 48,
                                 ),
                               ),
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              },
                             ),
                           )
                         else

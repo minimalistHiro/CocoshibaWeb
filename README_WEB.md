@@ -45,6 +45,35 @@ flutter pub get
 flutter run -d chrome
 ```
 
+## 画像が表示されない（CORS）
+
+Flutter Web（特に CanvasKit）では、Firebase Storage の画像を取得する際にブラウザの CORS 制約を受けます。
+Console に `blocked by CORS policy: No 'Access-Control-Allow-Origin' header` が出る場合は、**Storage バケットの CORS 設定**が必要です。
+
+### CORS 設定（推奨）
+
+Google Cloud SDK（`gsutil`）が使える環境で、以下を実行してください。
+
+```bash
+./scripts/set_storage_cors.sh cocoshibaapp.appspot.com
+```
+
+（設定内容は `storage_cors.json`。必要に応じて許可する origin を追加してください）
+
+ローカル開発では Flutter の Web ポートが毎回変わることがあるため、CORS の `origin` と一致しないと再発します。固定ポートで起動するのがおすすめです。
+
+```bash
+flutter run -d chrome --web-port 53433
+```
+
+### 一時回避（開発用）
+
+環境によっては HTML レンダラーで回避できることがあります。
+
+```bash
+flutter run -d chrome --web-renderer html
+```
+
 ## ビルド
 
 ```bash

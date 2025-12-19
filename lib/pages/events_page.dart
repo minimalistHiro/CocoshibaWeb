@@ -45,7 +45,9 @@ class _EventsPageState extends State<EventsPage> {
 
   void _openDetail(CalendarEvent event) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
+      MaterialPageRoute(
+        builder: (_) => EventDetailPage(event: event, isExistingEvent: true),
+      ),
     );
   }
 
