@@ -1,5 +1,5 @@
 import 'package:cocoshibaweb/models/calendar_event.dart';
-import 'package:cocoshibaweb/pages/event_detail_page.dart';
+import 'package:cocoshibaweb/pages/existing_event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/widgets/event_card.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -46,7 +46,7 @@ class _EventsPageState extends State<EventsPage> {
   void _openDetail(CalendarEvent event) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => EventDetailPage(event: event, isExistingEvent: true),
+        builder: (_) => ExistingEventDetailPage(event: event),
       ),
     );
   }
