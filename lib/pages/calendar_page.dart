@@ -824,20 +824,20 @@ class _EventThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final placeholder = Container(
-      height: 160,
       color: Colors.grey.shade200,
       alignment: Alignment.center,
       child: Icon(Icons.event, color: Colors.grey.shade500, size: 48),
     );
-    if (imageUrl == null || imageUrl!.isEmpty) return placeholder;
-    return SizedBox(
-      height: 160,
-      child: CocoshibaNetworkImage(
-        url: imageUrl!,
-        fit: BoxFit.cover,
-        height: 160,
-        placeholder: placeholder,
-      ),
+
+    return AspectRatio(
+      aspectRatio: 2 / 1,
+      child: (imageUrl == null || imageUrl!.isEmpty)
+          ? placeholder
+          : CocoshibaNetworkImage(
+              url: imageUrl!,
+              fit: BoxFit.cover,
+              placeholder: placeholder,
+            ),
     );
   }
 }

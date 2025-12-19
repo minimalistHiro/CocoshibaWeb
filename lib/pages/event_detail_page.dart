@@ -13,10 +13,16 @@ class EventDetailPage extends StatefulWidget {
     super.key,
     required this.event,
     this.isExistingEvent = false,
+    this.title,
+    this.showReservationActions = true,
+    this.showScheduleInfo = true,
   });
 
   final CalendarEvent event;
   final bool isExistingEvent;
+  final String? title;
+  final bool showReservationActions;
+  final bool showScheduleInfo;
 
   @override
   State<EventDetailPage> createState() => _EventDetailPageState();
@@ -37,10 +43,16 @@ class _EventDetailPageState extends State<EventDetailPage> {
   void initState() {
     super.initState();
     _event = widget.event;
-    _reservationCountStream = widget.isExistingEvent
-        ? Stream.value(0)
-        : _eventService.watchEventReservationCount(_event.id);
-    _loadReservationStatus();
+    final reservationEnabled =
+        widget.showReservationActions && !widget.isExistingEvent;
+    _reservationCountStream = reservationEnabled
+        ? _eventService.watchEventReservationCount(_event.id)
+        : Stream.value(0);
+    if (reservationEnabled) {
+      _loadReservationStatus();
+    } else {
+      _isReservationLoading = false;
+    }
   }
 
   Future<void> _loadReservationStatus() async {
@@ -222,6 +234,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final event = _event;
+    final reservationEnabled =
+        widget.showReservationActions && !widget.isExistingEvent;
+    final title =
+        widget.title ?? (widget.isExistingEvent ? '既存イベント詳細' : 'イベント詳細');
 
     return StreamBuilder<int>(
       stream: _reservationCountStream,
@@ -248,12 +264,13 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             ? '定員に達しました'
                             : '予約する';
 
-        final dateText =
-            '${event.startDateTime.year}年${event.startDateTime.month}月${event.startDateTime.day}日（${_weekdayLabel(event.startDateTime.weekday)}）';
+        final dateText = widget.showScheduleInfo
+            ? '${event.startDateTime.year}年${event.startDateTime.month}月${event.startDateTime.day}日（${_weekdayLabel(event.startDateTime.weekday)}）'
+            : null;
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('イベント詳細'),
+            title: Text(title),
             actions: [
               StreamBuilder<bool>(
                 stream: _watchIsOwner(),
@@ -362,22 +379,26 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                     : '設定なし',
                               ),
                               const SizedBox(height: 8),
-                              _InfoRow(
-                                label: '予約人数',
-                                value: '$reservationCount人',
-                              ),
-                              const SizedBox(height: 8),
-                              _InfoRow(
-                                label: '日付',
-                                value: dateText,
-                              ),
-                              const SizedBox(height: 8),
-                              _InfoRow(
-                                label: '時間',
-                                value: event.isClosedDay
-                                    ? '終日'
-                                    : '${_hhmm(event.startDateTime)}〜${_hhmm(event.endDateTime)}',
-                              ),
+                              if (reservationEnabled) ...[
+                                _InfoRow(
+                                  label: '予約人数',
+                                  value: '$reservationCount人',
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              if (widget.showScheduleInfo) ...[
+                                _InfoRow(
+                                  label: '日付',
+                                  value: dateText!,
+                                ),
+                                const SizedBox(height: 8),
+                                _InfoRow(
+                                  label: '時間',
+                                  value: event.isClosedDay
+                                      ? '終日'
+                                      : '${_hhmm(event.startDateTime)}〜${_hhmm(event.endDateTime)}',
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               Text(
                                 'イベント内容',
@@ -437,35 +458,37 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           );
                         },
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: _hasReservation
-                                ? Colors.redAccent
-                                : Theme.of(context).colorScheme.primary,
-                            disabledBackgroundColor: Colors.grey.shade400,
-                            shape: const StadiumBorder(),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                      if (reservationEnabled) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _hasReservation
+                                  ? Colors.redAccent
+                                  : Theme.of(context).colorScheme.primary,
+                              disabledBackgroundColor: Colors.grey.shade400,
+                              shape: const StadiumBorder(),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: (isReservationButtonDisabled ||
+                                    isReservationBusy)
+                                ? null
+                                : _onReservationButtonPressed,
+                            child: isReservationBusy &&
+                                    !isReservationButtonDisabled
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(reservationButtonLabel),
                           ),
-                          onPressed:
-                              (isReservationButtonDisabled || isReservationBusy)
-                                  ? null
-                                  : _onReservationButtonPressed,
-                          child:
-                              isReservationBusy && !isReservationButtonDisabled
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(reservationButtonLabel),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),

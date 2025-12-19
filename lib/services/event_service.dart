@@ -89,14 +89,30 @@ class EventService {
   }
 
   Stream<List<CalendarEvent>> watchAllExistingEvents({bool descending = true}) {
-    return _existingEventsRef
-        .orderBy('startDateTime', descending: descending)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(CalendarEvent.fromDocument)
-              .toList(growable: false),
-        );
+    DateTime parseDate(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    return _existingEventsRef.snapshots().map((snapshot) {
+      final items = snapshot.docs.map((doc) {
+        final data = doc.data();
+        final event = CalendarEvent.fromDocument(doc);
+        final createdAt = parseDate(data['createdAt']);
+        final start = event.startDateTime;
+        final sortKey =
+            start.millisecondsSinceEpoch == 0 ? createdAt : start.toLocal();
+        return (event: event, sortKey: sortKey);
+      }).toList();
+
+      items.sort((a, b) {
+        final cmp = a.sortKey.compareTo(b.sortKey);
+        return descending ? -cmp : cmp;
+      });
+
+      return items.map((item) => item.event).toList(growable: false);
+    });
   }
 
   Future<String> createEvent({
@@ -216,11 +232,9 @@ class EventService {
       ...uploadedUrls,
     ];
 
-    await docRef.set({
+    final updateData = <String, dynamic>{
       'name': name.trim(),
       'organizer': organizer.trim(),
-      'startDateTime': Timestamp.fromDate(startDateTime),
-      'endDateTime': Timestamp.fromDate(endDateTime),
       'content': content.trim(),
       'imageUrls': mergedUrls,
       'colorValue': colorValue,
@@ -230,7 +244,13 @@ class EventService {
           ? null
           : existingEventId!.trim(),
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    if (!isExistingEvent) {
+      updateData['startDateTime'] = Timestamp.fromDate(startDateTime);
+      updateData['endDateTime'] = Timestamp.fromDate(endDateTime);
+    }
+
+    await docRef.set(updateData, SetOptions(merge: true));
 
     final afterUrlSet = mergedUrls.toSet();
     final removedUrls = beforeUrls.difference(afterUrlSet);

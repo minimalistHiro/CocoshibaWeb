@@ -162,7 +162,7 @@ class _EventEditPageState extends State<EventEditPage> {
     }
 
     if (!_formKey.currentState!.validate()) return;
-    if (!_endDateTime.isAfter(_startDateTime)) {
+    if (!widget.isExistingEvent && !_endDateTime.isAfter(_startDateTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('終了日時は開始日時より後にしてください')),
       );
@@ -364,52 +364,57 @@ class _EventEditPageState extends State<EventEditPage> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _DateTimeField(
-                                  label: '開始日時',
-                                  value: _formatDateTime(_startDateTime),
-                                  onTap: _isSaving
-                                      ? null
-                                      : () async {
-                                          final picked = await _pickDateTime(
-                                            _startDateTime,
-                                          );
-                                          if (picked == null || !mounted) {
-                                            return;
-                                          }
-                                          setState(() {
-                                            _startDateTime = picked;
-                                            if (!_endDateTime.isAfter(picked)) {
-                                              _endDateTime =
-                                                  _defaultEndForStart(picked);
+                          if (!widget.isExistingEvent) ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _DateTimeField(
+                                    label: '開始日時',
+                                    value: _formatDateTime(_startDateTime),
+                                    onTap: _isSaving
+                                        ? null
+                                        : () async {
+                                            final picked = await _pickDateTime(
+                                              _startDateTime,
+                                            );
+                                            if (picked == null || !mounted) {
+                                              return;
                                             }
-                                          });
-                                        },
+                                            setState(() {
+                                              _startDateTime = picked;
+                                              if (!_endDateTime
+                                                  .isAfter(picked)) {
+                                                _endDateTime =
+                                                    _defaultEndForStart(picked);
+                                              }
+                                            });
+                                          },
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _DateTimeField(
-                                  label: '終了日時',
-                                  value: _formatDateTime(_endDateTime),
-                                  onTap: _isSaving
-                                      ? null
-                                      : () async {
-                                          final picked = await _pickDateTime(
-                                            _endDateTime,
-                                          );
-                                          if (picked == null || !mounted) {
-                                            return;
-                                          }
-                                          setState(() => _endDateTime = picked);
-                                        },
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _DateTimeField(
+                                    label: '終了日時',
+                                    value: _formatDateTime(_endDateTime),
+                                    onTap: _isSaving
+                                        ? null
+                                        : () async {
+                                            final picked = await _pickDateTime(
+                                              _endDateTime,
+                                            );
+                                            if (picked == null || !mounted) {
+                                              return;
+                                            }
+                                            setState(
+                                              () => _endDateTime = picked,
+                                            );
+                                          },
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           _ColorSelector(
                             palette: _colorPalette,
                             selectedIndex: _selectedColorIndex,
