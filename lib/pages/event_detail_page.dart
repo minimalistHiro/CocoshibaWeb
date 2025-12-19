@@ -1,6 +1,9 @@
 import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
+import 'package:cocoshibaweb/services/owner_service.dart';
+import 'package:cocoshibaweb/services/user_profile_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 class EventDetailPage extends StatefulWidget {
@@ -14,12 +17,14 @@ class EventDetailPage extends StatefulWidget {
 
 class _EventDetailPageState extends State<EventDetailPage> {
   final EventService _eventService = EventService();
+  final UserProfileService _profileService = UserProfileService();
   late final CalendarEvent _event;
   late final Stream<int> _reservationCountStream;
 
   bool _hasReservation = false;
   bool _isReservationLoading = true;
   bool _isReservationProcessing = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -135,6 +140,60 @@ class _EventDetailPageState extends State<EventDetailPage> {
     }
   }
 
+  Stream<bool> _watchIsOwner() {
+    if (Firebase.apps.isEmpty) return Stream.value(false);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(false);
+    return _profileService
+        .watchProfile(user.uid)
+        .map(OwnerService.isOwnerFromProfile)
+        .handleError((_) => false);
+  }
+
+  Future<void> _onDeletePressed() async {
+    if (_isDeleting) return;
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('イベント削除の確認'),
+            content: const Text('このイベントを削除しますか？\nこの操作は取り消せません。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton.tonal(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('削除する'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await _eventService.deleteEvent(_event.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('イベントを削除しました')),
+      );
+      Navigator.of(context).maybePop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('削除に失敗しました: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -147,7 +206,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         final isEventEnded = DateTime.now().isAfter(event.endDateTime);
         final isEventFull = _isEventFull(reservationCount);
         final isReservationBusy =
-            _isReservationLoading || _isReservationProcessing;
+            _isReservationLoading || _isReservationProcessing || _isDeleting;
         final isReservationButtonDisabled = event.isClosedDay ||
             isEventEnded ||
             (!_hasReservation && isEventFull);
@@ -300,32 +359,68 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _hasReservation
-                            ? Colors.redAccent
-                            : Theme.of(context).colorScheme.primary,
-                        disabledBackgroundColor: Colors.grey.shade400,
-                        shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed:
-                          (isReservationButtonDisabled || isReservationBusy)
-                              ? null
-                              : _onReservationButtonPressed,
-                      child: isReservationBusy && !isReservationButtonDisabled
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StreamBuilder<bool>(
+                        stream: _watchIsOwner(),
+                        builder: (context, ownerSnapshot) {
+                          final isOwner = ownerSnapshot.data == true;
+                          if (!isOwner) return const SizedBox.shrink();
+                          return SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.redAccent,
+                                side: const BorderSide(color: Colors.redAccent),
+                                shape: const StadiumBorder(),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
-                            )
-                          : Text(reservationButtonLabel),
-                    ),
+                              onPressed: _isDeleting ? null : _onDeletePressed,
+                              child: _isDeleting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('イベントを削除する'),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _hasReservation
+                                ? Colors.redAccent
+                                : Theme.of(context).colorScheme.primary,
+                            disabledBackgroundColor: Colors.grey.shade400,
+                            shape: const StadiumBorder(),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed:
+                              (isReservationButtonDisabled || isReservationBusy)
+                                  ? null
+                                  : _onReservationButtonPressed,
+                          child:
+                              isReservationBusy && !isReservationButtonDisabled
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(reservationButtonLabel),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

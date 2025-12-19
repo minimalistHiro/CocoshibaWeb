@@ -1,10 +1,14 @@
 import 'dart:math' as math;
 
+import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/pages/event_detail_page.dart';
+import 'package:cocoshibaweb/router.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
+import 'package:cocoshibaweb/services/owner_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
@@ -113,7 +117,13 @@ class _CalendarViewState extends State<CalendarView> {
 
         final content = _CalendarContent(
           calendarHeight: calendarHeight,
-          header: _buildHeader(context, theme, currentMonth),
+          header: _buildHeader(
+            context,
+            theme,
+            currentMonth,
+            selectedDate: _selectedDate,
+            showCreateButton: !widget.embedded,
+          ),
           snapshot: snapshot,
           groupedEvents: grouped,
           selectedEvents: selectedEvents,
@@ -144,7 +154,10 @@ class _CalendarViewState extends State<CalendarView> {
   Widget _buildHeader(
     BuildContext context,
     ThemeData theme,
-    DateTime currentMonth,
+    DateTime currentMonth, {
+    required DateTime? selectedDate,
+    required bool showCreateButton,
+  }
   ) {
     final hasPrev = _currentPage > 0;
     final hasNext = _currentPage < _monthCount - 1;
@@ -156,6 +169,7 @@ class _CalendarViewState extends State<CalendarView> {
       children: [
         Row(
           children: [
+            const SizedBox(width: 48, height: 48),
             Expanded(
               child: Center(
                 child: Text(
@@ -167,6 +181,10 @@ class _CalendarViewState extends State<CalendarView> {
                 ),
               ),
             ),
+            if (showCreateButton)
+              _OwnerCreateEventButton(selectedDate: selectedDate)
+            else
+              const SizedBox(width: 48, height: 48),
           ],
         ),
         const SizedBox(height: 12),
@@ -264,6 +282,43 @@ class _CalendarViewState extends State<CalendarView> {
   void _openEventDetail(BuildContext context, CalendarEvent event) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
+    );
+  }
+}
+
+class _OwnerCreateEventButton extends StatelessWidget {
+  const _OwnerCreateEventButton({required this.selectedDate});
+
+  final DateTime? selectedDate;
+
+  String _dateParam(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AppServices.of(context).auth;
+    final user = auth.currentUser;
+    final ownerService = OwnerService();
+
+    return StreamBuilder<bool>(
+      stream: ownerService.watchIsOwner(user),
+      builder: (context, snapshot) {
+        final isOwner = snapshot.data == true;
+        if (!isOwner) return const SizedBox(width: 48, height: 48);
+
+        final date = selectedDate;
+        final suffix = date == null ? '' : '?date=${_dateParam(date)}';
+
+        return IconButton(
+          onPressed: () => context.push('${CocoshibaPaths.calendarEventCreate}$suffix'),
+          icon: const Icon(Icons.add_circle_outline),
+          tooltip: '新規イベント作成',
+        );
+      },
     );
   }
 }

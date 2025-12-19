@@ -1,12 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/calendar_event.dart';
+import '../models/local_image.dart';
 
 class EventService {
-  EventService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  EventService({FirebaseFirestore? firestore, FirebaseStorage? storage})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
 
   CollectionReference<Map<String, dynamic>> get _eventsRef =>
       _firestore.collection('events');
@@ -86,6 +90,106 @@ class EventService {
               .map(CalendarEvent.fromDocument)
               .toList(growable: false),
         );
+  }
+
+  Future<String> createEvent({
+    required String name,
+    required String organizer,
+    required DateTime startDateTime,
+    required DateTime endDateTime,
+    required String content,
+    required List<String> imageUrls,
+    required int colorValue,
+    required int capacity,
+    List<LocalImage> images = const <LocalImage>[],
+    bool isClosedDay = false,
+    String? existingEventId,
+  }) async {
+    final docRef = _eventsRef.doc();
+    final uploadedUrls = await _uploadEventImages(docRef.id, images);
+    final mergedUrls = <String>[
+      ...imageUrls,
+      ...uploadedUrls,
+    ];
+
+    await docRef.set({
+      'name': name.trim(),
+      'organizer': organizer.trim(),
+      'startDateTime': Timestamp.fromDate(startDateTime),
+      'endDateTime': Timestamp.fromDate(endDateTime),
+      'content': content.trim(),
+      'imageUrls': mergedUrls,
+      'colorValue': colorValue,
+      'capacity': capacity,
+      'isClosedDay': isClosedDay,
+      'existingEventId':
+          (existingEventId ?? '').trim().isEmpty ? null : existingEventId!.trim(),
+      'reservationCount': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return docRef.id;
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    final docRef = _eventsRef.doc(eventId);
+    final snapshot = await docRef.get();
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data() ?? const <String, dynamic>{};
+    final urls = (data['imageUrls'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .where((e) => e.trim().isNotEmpty)
+            .toList(growable: false) ??
+        const <String>[];
+
+    for (final url in urls) {
+      try {
+        await _storage.refFromURL(url).delete();
+      } catch (_) {
+        // ignore cleanup failures
+      }
+    }
+
+    await _deleteSubcollection(docRef.collection('event_reservations'));
+    await docRef.delete();
+  }
+
+  Future<void> _deleteSubcollection(
+    CollectionReference<Map<String, dynamic>> ref,
+  ) async {
+    while (true) {
+      final snapshot = await ref.limit(100).get();
+      if (snapshot.docs.isEmpty) break;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<List<String>> _uploadEventImages(
+    String eventId,
+    List<LocalImage> images,
+  ) async {
+    if (images.isEmpty) return const <String>[];
+
+    final uploaded = <String>[];
+    for (final image in images) {
+      final filename = image.filename.trim().isEmpty
+          ? '${DateTime.now().millisecondsSinceEpoch}.jpg'
+          : '${DateTime.now().millisecondsSinceEpoch}_${image.filename.trim()}';
+      final ref = _storage.ref().child('event_images/$eventId/$filename');
+      final task = await ref.putData(
+        image.bytes,
+        SettableMetadata(contentType: image.contentType),
+      );
+      final url = await task.ref.getDownloadURL();
+      uploaded.add(url);
+    }
+    return uploaded;
   }
 
   Future<bool> hasReservation({

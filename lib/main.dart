@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:cloud_firestore_web/cloud_firestore_web.dart';
+import 'package:firebase_storage_web/firebase_storage_web.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,9 @@ Future<void> main() async {
   // to the (unsupported) method-channel codec on Flutter web, which triggers
   // the "Int64 accessor not supported by dart2js" error.
   FirebaseFirestoreWeb.registerWith(webPluginRegistrar);
+  // Explicitly register the Storage web implementation to avoid calling
+  // method channels (which are unsupported on Flutter web).
+  FirebaseStorageWeb.registerWith(webPluginRegistrar);
   try {
     usePathUrlStrategy();
   } catch (_) {

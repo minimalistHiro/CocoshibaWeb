@@ -4,6 +4,7 @@ import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/book_order_page.dart';
 import 'package:cocoshibaweb/pages/faq_page.dart';
+import 'package:cocoshibaweb/pages/event_create_page.dart';
 import 'package:cocoshibaweb/pages/events_page.dart';
 import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
@@ -25,6 +26,8 @@ class CocoshibaPaths {
   static const menu = '/menu';
   static const bookOrder = '/book-order';
   static const store = '/store';
+
+  static const calendarEventCreate = '/_/calendar/events/new';
 
   static const login = '/_/login';
   static const signup = '/_/signup';
@@ -87,6 +90,25 @@ class CocoshibaRouter {
                 GoRoute(
                   path: CocoshibaPaths.calendar,
                   builder: (context, state) => const CalendarPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.calendarEventCreate,
+                  builder: (context, state) {
+                    DateTime? initialDate;
+                    final raw = state.uri.queryParameters['date'];
+                    if (raw != null && raw.isNotEmpty) {
+                      final parts = raw.split('-');
+                      if (parts.length == 3) {
+                        final year = int.tryParse(parts[0]);
+                        final month = int.tryParse(parts[1]);
+                        final day = int.tryParse(parts[2]);
+                        if (year != null && month != null && day != null) {
+                          initialDate = DateTime(year, month, day);
+                        }
+                      }
+                    }
+                    return EventCreatePage(initialDate: initialDate);
+                  },
                 ),
                 GoRoute(
                   path: CocoshibaPaths.menu,
