@@ -26,6 +26,8 @@ class CocoshibaNetworkImage extends StatefulWidget {
 }
 
 class _CocoshibaNetworkImageState extends State<CocoshibaNetworkImage> {
+  static bool _styleInjected = false;
+
   late final String _viewType;
   late final html.ImageElement _img;
   late final html.DivElement _container;
@@ -37,12 +39,15 @@ class _CocoshibaNetworkImageState extends State<CocoshibaNetworkImage> {
   void initState() {
     super.initState();
 
+    _ensurePointerPassthroughStyle();
+
     _viewType = 'cocoshiba-img-${identityHashCode(this)}';
     _img = html.ImageElement();
     _container = html.DivElement()
       ..style.width = '100%'
       ..style.height = '100%'
-      ..style.overflow = 'hidden';
+      ..style.overflow = 'hidden'
+      ..style.pointerEvents = 'none';
 
     _applyStyles();
     _bindImage(widget.url);
@@ -90,6 +95,15 @@ class _CocoshibaNetworkImageState extends State<CocoshibaNetworkImage> {
     });
 
     _img.src = url;
+  }
+
+  void _ensurePointerPassthroughStyle() {
+    if (_styleInjected) return;
+    _styleInjected = true;
+
+    final style = html.StyleElement()
+      ..innerHtml = 'flt-platform-view { pointer-events: none; }';
+    html.document.head?.append(style);
   }
 
   String _objectFit(BoxFit fit) {
