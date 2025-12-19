@@ -1,6 +1,7 @@
 import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/router.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 const cocoshibaMainColor = Color(0xFF2E9463);
 const cocoshibaSubColor = Color(0xFFFFFBD2);
@@ -42,6 +43,7 @@ class _CocoshibaWebAppState extends State<CocoshibaWebApp> {
       seedColor: cocoshibaMainColor,
       brightness: Brightness.light,
     );
+    final baseTextTheme = ThemeData(brightness: Brightness.light).textTheme;
 
     return AppServices(
       auth: widget.auth,
@@ -53,6 +55,7 @@ class _CocoshibaWebAppState extends State<CocoshibaWebApp> {
             secondaryContainer: cocoshibaSubColor,
           ),
           scaffoldBackgroundColor: cocoshibaBackgroundColor,
+          textTheme: GoogleFonts.sawarabiMinchoTextTheme(baseTextTheme),
           useMaterial3: true,
         ),
         routerConfig: _router.router,
