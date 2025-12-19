@@ -1,8 +1,10 @@
 import 'package:cocoshibaweb/app.dart';
+import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/models/local_image.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/services/owner_service.dart';
 import 'package:cocoshibaweb/utils/platform_image_picker.dart';
+import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -43,6 +45,9 @@ class _EventCreatePageState extends State<EventCreatePage> {
 
   bool _isSaving = false;
   bool _isPickingImages = false;
+
+  CalendarEvent? _selectedExistingEvent;
+  final List<String> _existingImageUrls = [];
 
   late DateTime _startDateTime;
   late DateTime _endDateTime;
@@ -99,6 +104,104 @@ class _EventCreatePageState extends State<EventCreatePage> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
+  void _applyExistingEvent(CalendarEvent event) {
+    final colorIndex =
+        _colorPalette.indexWhere((color) => color.value == event.colorValue);
+
+    setState(() {
+      _selectedExistingEvent = event;
+      _nameController.text = event.name;
+      _organizerController.text = event.organizer;
+      _contentController.text = event.content;
+      _capacityController.text = event.capacity.toString();
+      _existingImageUrls
+        ..clear()
+        ..addAll(event.imageUrls);
+      _images.clear();
+      if (colorIndex >= 0) _selectedColorIndex = colorIndex;
+      if (event.startDateTime.millisecondsSinceEpoch > 0) {
+        _startDateTime = event.startDateTime;
+      }
+      if (event.endDateTime.millisecondsSinceEpoch > 0) {
+        _endDateTime = event.endDateTime;
+      }
+    });
+  }
+
+  void _clearExistingEvent() {
+    setState(() {
+      _selectedExistingEvent = null;
+      _existingImageUrls.clear();
+    });
+  }
+
+  Future<void> _showExistingEventPicker() async {
+    if (Firebase.apps.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Firebase が初期化されていません。')),
+      );
+      return;
+    }
+
+    final picked = await showDialog<CalendarEvent>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('既存イベントを呼び出す'),
+        content: SizedBox(
+          width: 520,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 420),
+            child: StreamBuilder<List<CalendarEvent>>(
+              stream: _eventService.watchAllExistingEvents(descending: true),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Text('取得に失敗しました: ${snapshot.error}');
+                }
+
+                final events = snapshot.data ?? const <CalendarEvent>[];
+                if (events.isEmpty) {
+                  return const Center(
+                    child: Text('既存イベントがまだありません'),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: events.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    final title =
+                        event.name.trim().isEmpty ? 'イベント' : event.name;
+                    return ListTile(
+                      title: Text(title),
+                      subtitle: Text(_formatDateTime(event.startDateTime)),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.of(dialogContext).pop(event),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || picked == null) return;
+    _applyExistingEvent(picked);
+  }
+
   Future<void> _pickImages() async {
     if (_isSaving || _isPickingImages) return;
     setState(() => _isPickingImages = true);
@@ -118,6 +221,10 @@ class _EventCreatePageState extends State<EventCreatePage> {
 
   void _removeImage(LocalImage image) {
     setState(() => _images.remove(image));
+  }
+
+  void _removeExistingImageUrl(String url) {
+    setState(() => _existingImageUrls.remove(url));
   }
 
   Future<void> _save() async {
@@ -161,10 +268,11 @@ class _EventCreatePageState extends State<EventCreatePage> {
         startDateTime: _startDateTime,
         endDateTime: _endDateTime,
         content: _contentController.text,
-        imageUrls: const <String>[],
+        imageUrls: _existingImageUrls,
         images: _images,
         colorValue: _colorPalette[_selectedColorIndex].value,
         capacity: capacity,
+        existingEventId: _selectedExistingEvent?.id,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -301,6 +409,28 @@ class _EventCreatePageState extends State<EventCreatePage> {
                                 fontWeight: FontWeight.w800,
                               ),
                         ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed:
+                                  _isSaving ? null : _showExistingEventPicker,
+                              icon: const Icon(Icons.history_toggle_off),
+                              label: const Text('既存イベントを呼び出す'),
+                            ),
+                            if (_selectedExistingEvent != null)
+                              InputChip(
+                                label: Text(
+                                  '選択中: ${_selectedExistingEvent!.name.trim().isEmpty ? 'イベント' : _selectedExistingEvent!.name}',
+                                ),
+                                onDeleted:
+                                    _isSaving ? null : _clearExistingEvent,
+                              ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _nameController,
@@ -405,9 +535,11 @@ class _EventCreatePageState extends State<EventCreatePage> {
                         ),
                         const SizedBox(height: 12),
                         _ImagePickerGrid(
+                          imageUrls: _existingImageUrls,
                           images: _images,
                           isBusy: _isSaving || _isPickingImages,
                           onAdd: _pickImages,
+                          onRemoveUrl: _removeExistingImageUrl,
                           onRemove: _removeImage,
                         ),
                         const SizedBox(height: 16),
@@ -534,21 +666,68 @@ class _ColorSelector extends StatelessWidget {
 
 class _ImagePickerGrid extends StatelessWidget {
   const _ImagePickerGrid({
+    required this.imageUrls,
     required this.images,
     required this.isBusy,
     required this.onAdd,
+    required this.onRemoveUrl,
     required this.onRemove,
   });
 
+  final List<String> imageUrls;
   final List<LocalImage> images;
   final bool isBusy;
   final VoidCallback onAdd;
+  final ValueChanged<String> onRemoveUrl;
   final void Function(LocalImage image) onRemove;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final children = <Widget>[
+      ...imageUrls.map(
+        (url) => Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: CocoshibaNetworkImage(
+                  url: url,
+                  fit: BoxFit.cover,
+                  placeholder: Container(
+                    color: Colors.grey.shade200,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: InkWell(
+                onTap: isBusy ? null : () => onRemoveUrl(url),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(6),
+                  child: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       ...images.map(
         (image) => Stack(
           children: [
