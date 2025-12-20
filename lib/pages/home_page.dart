@@ -32,7 +32,8 @@ class _HomePageState extends State<HomePage> {
       body:
           '店内の本は自由に手に取り、席でゆっくり読めます。\n'
           '読書の合間にコーヒーを。',
-      imageAsset: 'assets/images/IMG_0038.jpeg',
+      imageAsset: 'assets/images/IMG_1682.jpeg',
+      layout: _StoryLayout.quietHighlight,
     ),
     _StorySection(
       title: 'イベントがつなぐ緑',
@@ -59,6 +60,7 @@ class _HomePageState extends State<HomePage> {
           'アーティストの表現が、日常に彩りを添えます。\n'
           '気軽に立ち寄れる文化の場所。',
       imageAsset: 'assets/images/IMG_1385.jpeg',
+      hasImageRadius: false,
     ),
   ];
 
@@ -67,11 +69,12 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       for (final section in _sections) {
-        precacheImage(AssetImage(section.imageAsset), context);
+      precacheImage(AssetImage(section.imageAsset), context);
       }
       precacheImage(const AssetImage('assets/images/IMG_1385.jpeg'), context);
       precacheImage(const AssetImage('assets/images/IMG_3803.jpeg'), context);
       precacheImage(const AssetImage('assets/images/IMG_1681.jpeg'), context);
+      precacheImage(const AssetImage('assets/images/IMG_1683.jpeg'), context);
     });
   }
 
@@ -142,6 +145,7 @@ class _StorySection {
     required this.imageAsset,
     this.isHero = false,
     this.layout = _StoryLayout.standard,
+    this.hasImageRadius = true,
   });
 
   final String title;
@@ -150,12 +154,14 @@ class _StorySection {
   final String imageAsset;
   final bool isHero;
   final _StoryLayout layout;
+  final bool hasImageRadius;
 }
 
 enum _StoryLayout {
   standard,
   eventHighlight,
   handmadeHighlight,
+  quietHighlight,
 }
 
 class _StorySectionView extends StatelessWidget {
@@ -238,6 +244,10 @@ class _StorySectionView extends StatelessWidget {
           return _HandmadeHighlightSectionView(section: section);
         }
 
+        if (section.layout == _StoryLayout.quietHighlight) {
+          return _QuietHighlightSectionView(section: section);
+        }
+
         final isWide = constraints.maxWidth >= 880;
         final imageWidth = isWide ? constraints.maxWidth * 0.52 : null;
         final imageHeight = isWide
@@ -292,6 +302,7 @@ class _StorySectionView extends StatelessWidget {
                         imageAsset: section.imageAsset,
                         width: imageWidth,
                         height: imageHeight,
+                        hasRadius: section.hasImageRadius,
                       ),
                     ],
                   )
@@ -301,6 +312,7 @@ class _StorySectionView extends StatelessWidget {
                       _StoryImage(
                         imageAsset: section.imageAsset,
                         height: imageHeight,
+                        hasRadius: section.hasImageRadius,
                       ),
                       const SizedBox(height: 24),
                       textBlock,
@@ -486,6 +498,97 @@ class _HandmadeHighlightSectionViewState
   }
 }
 
+class _QuietHighlightSectionView extends StatefulWidget {
+  const _QuietHighlightSectionView({required this.section});
+
+  final _StorySection section;
+
+  @override
+  State<_QuietHighlightSectionView> createState() =>
+      _QuietHighlightSectionViewState();
+}
+
+class _QuietHighlightSectionViewState
+    extends State<_QuietHighlightSectionView> {
+  _CollageLayout _layout = _CollageLayout.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _layout = _createQuietLayout();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.primary;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 940;
+        final collageHeight = isWide
+            ? (constraints.maxHeight * 0.58).clamp(300.0, 520.0)
+            : (constraints.maxWidth * 0.76).clamp(260.0, 460.0);
+        final collageWidth = isWide
+            ? (constraints.maxWidth * 0.82).clamp(560.0, 920.0)
+            : constraints.maxWidth * 0.94;
+
+        final textBlock = _EventBodyText(
+          section: widget.section,
+          textColor: textColor,
+          maxWidth: isWide ? constraints.maxWidth * 0.4 : constraints.maxWidth,
+        );
+
+        return SizedBox.expand(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            child: isWide
+                ? Center(
+                    child: SizedBox(
+                      width: collageWidth,
+                      height: collageHeight,
+                      child: _QuietCollage(
+                        layout: _layout,
+                        textBlock: Align(
+                          alignment: Alignment.topRight,
+                          child: textBlock,
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: collageWidth,
+                          height: collageHeight,
+                          child: _QuietCollage(
+                            layout: _layout,
+                            textBlock: const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: textBlock,
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _EventBodyText extends StatelessWidget {
   const _EventBodyText({
     required this.section,
@@ -626,6 +729,92 @@ class _HandmadeCollage extends StatelessWidget {
               width: textAreaWidth,
               child: Align(
                 alignment: Alignment.centerLeft,
+                child: textBlock,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _QuietCollage extends StatelessWidget {
+  const _QuietCollage({
+    required this.layout,
+    required this.textBlock,
+  });
+
+  final _CollageLayout layout;
+  final Widget textBlock;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textAreaWidth = constraints.maxWidth * 0.36;
+        final imageAreaWidth = constraints.maxWidth - textAreaWidth;
+        final imageAreaHeight = constraints.maxHeight;
+
+        final primarySize = Size(
+          imageAreaWidth * 0.76,
+          imageAreaHeight * 0.78,
+        );
+        final secondarySize = Size(
+          imageAreaWidth * 0.7,
+          imageAreaHeight * 0.72,
+        );
+
+        final primaryOffset = Offset(
+          imageAreaWidth * 0.5,
+          imageAreaHeight * 0.5,
+        );
+        final secondaryOffset = Offset(
+          imageAreaWidth * 0.02,
+          imageAreaHeight * 0.02,
+        );
+
+        final imageWidgets = <_CollageImageSpec>[
+          _CollageImageSpec(
+            asset: 'assets/images/IMG_1683.jpeg',
+            size: secondarySize,
+            baseOffset: secondaryOffset,
+            layout: layout.second,
+          ),
+          _CollageImageSpec(
+            asset: 'assets/images/IMG_1682.jpeg',
+            size: primarySize,
+            baseOffset: primaryOffset,
+            layout: layout.first,
+          ),
+        ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.only(right: textAreaWidth * 0.95),
+                child: Stack(
+                  children: imageWidgets
+                      .map(
+                        (spec) => _CollageImage(
+                          asset: spec.asset,
+                          size: spec.size,
+                          baseOffset: spec.baseOffset,
+                          layout: spec.layout,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: textAreaWidth,
+              child: Align(
+                alignment: Alignment.centerRight,
                 child: textBlock,
               ),
             ),
@@ -862,27 +1051,56 @@ _CollageLayout _createHandmadeLayout() {
   );
 }
 
+_CollageLayout _createQuietLayout() {
+  final random = Random();
+  final isFirstOnTop = random.nextBool();
+
+  _CollageImageLayout createLayout(int zIndex) {
+    return _CollageImageLayout(
+      offset: Offset(
+        _getRandomInRange(random, -16, 16),
+        _getRandomInRange(random, -20, 14),
+      ),
+      rotation: 0,
+      zIndex: zIndex,
+    );
+  }
+
+  return _CollageLayout(
+    first: createLayout(isFirstOnTop ? 2 : 1),
+    second: createLayout(isFirstOnTop ? 1 : 2),
+  );
+}
+
 class _StoryImage extends StatelessWidget {
   const _StoryImage({
     required this.imageAsset,
     this.width,
     this.height,
+    this.hasRadius = true,
   });
 
   final String imageAsset;
   final double? width;
   final double? height;
+  final bool hasRadius;
 
   @override
   Widget build(BuildContext context) {
+    final image = Image.asset(
+      imageAsset,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+    );
+
+    if (!hasRadius) {
+      return image;
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
-      child: Image.asset(
-        imageAsset,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-      ),
+      child: image,
     );
   }
 }
