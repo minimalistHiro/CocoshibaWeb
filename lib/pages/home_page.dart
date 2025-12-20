@@ -49,7 +49,8 @@ class _HomePageState extends State<HomePage> {
       body:
           'つくる人の想いと、選ぶ人の感性が出会います。\n'
           '街の小さなマーケット。',
-      imageAsset: 'assets/images/IMG_2363.jpeg',
+      imageAsset: 'assets/images/IMG_1680.png',
+      layout: _StoryLayout.handmadeHighlight,
     ),
     _StorySection(
       title: 'アートとやさしい時間',
@@ -70,6 +71,7 @@ class _HomePageState extends State<HomePage> {
       }
       precacheImage(const AssetImage('assets/images/IMG_1385.jpeg'), context);
       precacheImage(const AssetImage('assets/images/IMG_3803.jpeg'), context);
+      precacheImage(const AssetImage('assets/images/IMG_1681.jpeg'), context);
     });
   }
 
@@ -153,6 +155,7 @@ class _StorySection {
 enum _StoryLayout {
   standard,
   eventHighlight,
+  handmadeHighlight,
 }
 
 class _StorySectionView extends StatelessWidget {
@@ -229,6 +232,10 @@ class _StorySectionView extends StatelessWidget {
 
         if (section.layout == _StoryLayout.eventHighlight) {
           return _EventHighlightSectionView(section: section);
+        }
+
+        if (section.layout == _StoryLayout.handmadeHighlight) {
+          return _HandmadeHighlightSectionView(section: section);
         }
 
         final isWide = constraints.maxWidth >= 880;
@@ -385,6 +392,100 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
   }
 }
 
+class _HandmadeHighlightSectionView extends StatefulWidget {
+  const _HandmadeHighlightSectionView({required this.section});
+
+  final _StorySection section;
+
+  @override
+  State<_HandmadeHighlightSectionView> createState() =>
+      _HandmadeHighlightSectionViewState();
+}
+
+class _HandmadeHighlightSectionViewState
+    extends State<_HandmadeHighlightSectionView> {
+  _CollageLayout _layout = _CollageLayout.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _layout = _createHandmadeLayout();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.primary;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 940;
+        final collageHeight = isWide
+            ? (constraints.maxHeight * 0.6).clamp(300.0, 520.0)
+            : (constraints.maxWidth * 0.78).clamp(260.0, 460.0);
+        final collageWidth = isWide
+            ? (constraints.maxWidth * 0.84).clamp(560.0, 920.0)
+            : constraints.maxWidth * 0.94;
+
+        final textBlock = _EventBodyText(
+          section: widget.section,
+          textColor: textColor,
+          maxWidth: isWide ? constraints.maxWidth * 0.42 : constraints.maxWidth,
+        );
+
+        return SizedBox.expand(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: isWide
+              ? Center(
+                  child: SizedBox(
+                    width: collageWidth,
+                    height: collageHeight,
+                    child: _HandmadeCollage(
+                      layout: _layout,
+                      textBlock: Align(
+                        alignment: Alignment.bottomRight,
+                        child: Transform.translate(
+                          offset: const Offset(8, 4),
+                          child: textBlock,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: collageWidth,
+                          height: collageHeight,
+                          child: _HandmadeCollage(
+                            layout: _layout,
+                            textBlock: const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: textBlock,
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _EventBodyText extends StatelessWidget {
   const _EventBodyText({
     required this.section,
@@ -445,6 +546,92 @@ class _EventBodyText extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HandmadeCollage extends StatelessWidget {
+  const _HandmadeCollage({
+    required this.layout,
+    required this.textBlock,
+  });
+
+  final _CollageLayout layout;
+  final Widget textBlock;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textAreaWidth = constraints.maxWidth * 0.34;
+        final imageAreaWidth = constraints.maxWidth - textAreaWidth;
+        final imageAreaHeight = constraints.maxHeight;
+
+        final primarySize = Size(
+          imageAreaWidth * 0.76,
+          imageAreaHeight * 0.76,
+        );
+        final secondarySize = Size(
+          imageAreaWidth * 0.65,
+          imageAreaHeight * 0.68,
+        );
+
+        final primaryOffset = Offset(
+          imageAreaWidth * -0.04,
+          imageAreaHeight * 0.38,
+        );
+        final secondaryOffset = Offset(
+          imageAreaWidth * 0.46,
+          imageAreaHeight * -0.1,
+        );
+
+        final imageWidgets = <_CollageImageSpec>[
+          _CollageImageSpec(
+            asset: 'assets/images/IMG_1680.png',
+            size: primarySize,
+            baseOffset: primaryOffset,
+            layout: layout.first,
+          ),
+          _CollageImageSpec(
+            asset: 'assets/images/IMG_1681.jpeg',
+            size: secondarySize,
+            baseOffset: secondaryOffset,
+            layout: layout.second,
+          ),
+        ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.only(right: textAreaWidth * 0.9),
+                child: Stack(
+                  children: imageWidgets
+                      .map(
+                        (spec) => _CollageImage(
+                          asset: spec.asset,
+                          size: spec.size,
+                          baseOffset: spec.baseOffset,
+                          layout: spec.layout,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: textAreaWidth,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: textBlock,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -642,6 +829,27 @@ _CollageLayout _createCollageLayout() {
       offset: Offset(
         _getRandomInRange(random, -18, 18),
         _getRandomInRange(random, -18, 18),
+      ),
+      rotation: 0,
+      zIndex: zIndex,
+    );
+  }
+
+  return _CollageLayout(
+    first: createLayout(isFirstOnTop ? 2 : 1),
+    second: createLayout(isFirstOnTop ? 1 : 2),
+  );
+}
+
+_CollageLayout _createHandmadeLayout() {
+  final random = Random();
+  final isFirstOnTop = random.nextBool();
+
+  _CollageImageLayout createLayout(int zIndex) {
+    return _CollageImageLayout(
+      offset: Offset(
+        _getRandomInRange(random, -22, 22),
+        _getRandomInRange(random, -14, 14),
       ),
       rotation: 0,
       zIndex: zIndex,
