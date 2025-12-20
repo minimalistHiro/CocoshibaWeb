@@ -741,6 +741,8 @@ class _HandmadeCollage extends StatelessWidget {
                           size: spec.size,
                           baseOffset: spec.baseOffset,
                           layout: spec.layout,
+                          alignment: spec.alignment,
+                          fit: spec.fit,
                         ),
                       )
                       .toList(),
@@ -832,6 +834,8 @@ class _QuietCollage extends StatelessWidget {
                           size: spec.size,
                           baseOffset: spec.baseOffset,
                           layout: spec.layout,
+                          alignment: spec.alignment,
+                          fit: spec.fit,
                         ),
                       )
                       .toList(),
@@ -873,12 +877,15 @@ class _EventCollage extends StatelessWidget {
         final titleInset = const EdgeInsets.only(left: 24, bottom: 24);
         final imageAreaWidth = constraints.maxWidth - titleInset.left;
         final imageAreaHeight = constraints.maxHeight - titleInset.bottom;
+        final imageAreaSize = Size(imageAreaWidth, imageAreaHeight);
 
         final primarySize = Size(
           imageAreaWidth * 0.7,
           imageAreaHeight * 0.7,
         );
-        final secondarySize = Size(
+        const img3803AspectRatio = 2983 / 2237;
+        final secondarySize = _containSize(
+          img3803AspectRatio,
           imageAreaWidth * 0.68,
           imageAreaHeight * 0.68,
         );
@@ -887,10 +894,26 @@ class _EventCollage extends StatelessWidget {
           imageAreaWidth * -0.08,
           imageAreaHeight * -0.06,
         );
-        final secondaryOffset = Offset(
+        final rawSecondaryOffset = Offset(
           imageAreaWidth * 0.54,
           imageAreaHeight * 0.38,
         );
+
+        final secondaryOffset =
+            isWide
+                ? rawSecondaryOffset
+                : _clampOffsetWithin(
+                    imageAreaSize,
+                    secondarySize,
+                    rawSecondaryOffset,
+                  );
+        final secondaryLayout = isWide
+            ? layout.second
+            : _CollageImageLayout(
+                offset: Offset.zero,
+                rotation: 0,
+                zIndex: layout.second.zIndex,
+              );
 
         final imageWidgets = <_CollageImageSpec>[
           _CollageImageSpec(
@@ -903,7 +926,8 @@ class _EventCollage extends StatelessWidget {
             asset: 'assets/images/IMG_3803.jpeg',
             size: secondarySize,
             baseOffset: secondaryOffset,
-            layout: layout.second,
+            layout: secondaryLayout,
+            alignment: Alignment.center,
           ),
         ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
 
@@ -920,6 +944,8 @@ class _EventCollage extends StatelessWidget {
                           size: spec.size,
                           baseOffset: spec.baseOffset,
                           layout: spec.layout,
+                          alignment: spec.alignment,
+                          fit: spec.fit,
                         ),
                       )
                       .toList(),
@@ -939,12 +965,16 @@ class _CollageImageSpec {
     required this.size,
     required this.baseOffset,
     required this.layout,
+    this.alignment = Alignment.center,
+    this.fit = BoxFit.cover,
   });
 
   final String asset;
   final Size size;
   final Offset baseOffset;
   final _CollageImageLayout layout;
+  final Alignment alignment;
+  final BoxFit fit;
 }
 
 class _CollageImage extends StatelessWidget {
@@ -953,12 +983,16 @@ class _CollageImage extends StatelessWidget {
     required this.size,
     required this.baseOffset,
     required this.layout,
+    required this.alignment,
+    required this.fit,
   });
 
   final String asset;
   final Size size;
   final Offset baseOffset;
   final _CollageImageLayout layout;
+  final Alignment alignment;
+  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
@@ -970,6 +1004,8 @@ class _CollageImage extends StatelessWidget {
         child: _CollageImageFrame(
           asset: asset,
           size: size,
+          alignment: alignment,
+          fit: fit,
         ),
       ),
     );
@@ -980,10 +1016,14 @@ class _CollageImageFrame extends StatelessWidget {
   const _CollageImageFrame({
     required this.asset,
     required this.size,
+    this.alignment = Alignment.center,
+    this.fit = BoxFit.cover,
   });
 
   final String asset;
   final Size size;
+  final Alignment alignment;
+  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
@@ -1001,7 +1041,8 @@ class _CollageImageFrame extends StatelessWidget {
         asset,
         width: size.width,
         height: size.height,
-        fit: BoxFit.cover,
+        fit: fit,
+        alignment: alignment,
       ),
     );
   }
@@ -1037,6 +1078,24 @@ class _CollageLayout {
 
 double _getRandomInRange(Random random, double min, double max) {
   return min + random.nextDouble() * (max - min);
+}
+
+Size _containSize(double aspectRatio, double maxWidth, double maxHeight) {
+  var width = maxWidth;
+  var height = width / aspectRatio;
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = height * aspectRatio;
+  }
+  return Size(width, height);
+}
+
+Offset _clampOffsetWithin(Size areaSize, Size itemSize, Offset desired) {
+  final maxX = (areaSize.width - itemSize.width).clamp(0.0, double.infinity);
+  final maxY = (areaSize.height - itemSize.height).clamp(0.0, double.infinity);
+  final dx = desired.dx.clamp(0.0, maxX).toDouble();
+  final dy = desired.dy.clamp(0.0, maxY).toDouble();
+  return Offset(dx, dy);
 }
 
 _CollageLayout _createCollageLayout() {
