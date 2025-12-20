@@ -249,10 +249,15 @@ class _StorySectionView extends StatelessWidget {
         }
 
         final isWide = constraints.maxWidth >= 880;
-        final imageWidth = isWide ? constraints.maxWidth * 0.52 : null;
+        final sectionPadding = isWide
+            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+        final imageWidth = isWide
+            ? constraints.maxWidth * 0.52
+            : constraints.maxWidth - sectionPadding.horizontal;
         final imageHeight = isWide
             ? (constraints.maxHeight * 0.7).clamp(320.0, 520.0)
-            : (constraints.maxWidth * 0.62).clamp(280.0, 520.0);
+            : (imageWidth * 0.62).clamp(260.0, 520.0);
 
         final textBlock = Column(
           crossAxisAlignment:
@@ -292,7 +297,7 @@ class _StorySectionView extends StatelessWidget {
 
         return SizedBox.expand(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            padding: sectionPadding,
             child: isWide
                 ? Row(
                     children: [
@@ -311,6 +316,7 @@ class _StorySectionView extends StatelessWidget {
                     children: [
                       _StoryImage(
                         imageAsset: section.imageAsset,
+                        width: imageWidth,
                         height: imageHeight,
                         hasRadius: section.hasImageRadius,
                       ),
@@ -362,6 +368,9 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
         final collageWidth = isWide
             ? (constraints.maxWidth * 0.78).clamp(520.0, 860.0)
             : constraints.maxWidth * 0.92;
+        final sectionPadding = isWide
+            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
 
         final textBlock = _EventBodyText(
           section: widget.section,
@@ -371,7 +380,7 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
 
         return SizedBox.expand(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            padding: sectionPadding,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,6 +451,9 @@ class _HandmadeHighlightSectionViewState
         final collageWidth = isWide
             ? (constraints.maxWidth * 0.84).clamp(560.0, 920.0)
             : constraints.maxWidth * 0.94;
+        final sectionPadding = isWide
+            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
 
         final textBlock = _EventBodyText(
           section: widget.section,
@@ -451,7 +463,7 @@ class _HandmadeHighlightSectionViewState
 
         return SizedBox.expand(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            padding: sectionPadding,
           child: isWide
               ? Center(
                   child: SizedBox(
@@ -481,6 +493,8 @@ class _HandmadeHighlightSectionViewState
                           child: _HandmadeCollage(
                             layout: _layout,
                             textBlock: const SizedBox.shrink(),
+                            textAreaWidthFactor: 0,
+                            imageAreaPaddingFactor: 0,
                           ),
                         ),
                       ),
@@ -543,9 +557,13 @@ class _QuietHighlightSectionViewState
           maxWidth: isWide ? constraints.maxWidth * 0.4 : constraints.maxWidth,
         );
 
+        final sectionPadding = isWide
+            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+
         return SizedBox.expand(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            padding: sectionPadding,
             child: isWide
                 ? Center(
                     child: SizedBox(
@@ -572,6 +590,8 @@ class _QuietHighlightSectionViewState
                           child: _QuietCollage(
                             layout: _layout,
                             textBlock: const SizedBox.shrink(),
+                            textAreaWidthFactor: 0,
+                            imageAreaPaddingFactor: 0,
                           ),
                         ),
                       ),
@@ -657,16 +677,20 @@ class _HandmadeCollage extends StatelessWidget {
   const _HandmadeCollage({
     required this.layout,
     required this.textBlock,
+    this.textAreaWidthFactor = 0.34,
+    this.imageAreaPaddingFactor = 0.9,
   });
 
   final _CollageLayout layout;
   final Widget textBlock;
+  final double textAreaWidthFactor;
+  final double imageAreaPaddingFactor;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textAreaWidth = constraints.maxWidth * 0.34;
+        final textAreaWidth = constraints.maxWidth * textAreaWidthFactor;
         final imageAreaWidth = constraints.maxWidth - textAreaWidth;
         final imageAreaHeight = constraints.maxHeight;
 
@@ -707,7 +731,8 @@ class _HandmadeCollage extends StatelessWidget {
           children: [
             Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.only(right: textAreaWidth * 0.9),
+                padding:
+                    EdgeInsets.only(right: textAreaWidth * imageAreaPaddingFactor),
                 child: Stack(
                   children: imageWidgets
                       .map(
@@ -743,16 +768,20 @@ class _QuietCollage extends StatelessWidget {
   const _QuietCollage({
     required this.layout,
     required this.textBlock,
+    this.textAreaWidthFactor = 0.36,
+    this.imageAreaPaddingFactor = 0.95,
   });
 
   final _CollageLayout layout;
   final Widget textBlock;
+  final double textAreaWidthFactor;
+  final double imageAreaPaddingFactor;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textAreaWidth = constraints.maxWidth * 0.36;
+        final textAreaWidth = constraints.maxWidth * textAreaWidthFactor;
         final imageAreaWidth = constraints.maxWidth - textAreaWidth;
         final imageAreaHeight = constraints.maxHeight;
 
@@ -793,7 +822,8 @@ class _QuietCollage extends StatelessWidget {
           children: [
             Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.only(right: textAreaWidth * 0.95),
+                padding:
+                    EdgeInsets.only(right: textAreaWidth * imageAreaPaddingFactor),
                 child: Stack(
                   children: imageWidgets
                       .map(

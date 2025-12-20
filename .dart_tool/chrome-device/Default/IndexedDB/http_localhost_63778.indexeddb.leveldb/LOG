@@ -1,0 +1,23 @@
+2025/12/19-16:43:22.439 2c32f92 Creating DB /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.N05ZUj/flutter_tools_chrome_device.A45TEV/Default/IndexedDB/http_localhost_63778.indexeddb.leveldb since it was missing.
+2025/12/19-16:43:22.448 2c32f92 Reusing MANIFEST /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.N05ZUj/flutter_tools_chrome_device.A45TEV/Default/IndexedDB/http_localhost_63778.indexeddb.leveldb/MANIFEST-000001
+2025/12/19-16:43:22.457 2c32fa1 Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/12/19-17:16:25.692 2c32fa1 Manual compaction at level-0 from '\x00\x04\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x05\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/12/19-17:19:26.039 2c32fa1 Level-0 table #5: started
+2025/12/19-17:19:26.042 2c32fa1 Level-0 table #5: 3347 bytes OK
+2025/12/19-17:19:26.043 2c32fa1 Delete type=0 #3
+2025/12/19-17:19:26.043 2c32f92 Manual compaction at level-0 from '\x00\x05\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x06\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/12/19-18:01:20.452 2c32fcd Manual compaction at level-0 from '\x00\x06\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x07\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/12/19-18:06:06.857 2c32fa1 Level-0 table #7: started
+2025/12/19-18:06:06.861 2c32fa1 Level-0 table #7: 1299 bytes OK
+2025/12/19-18:06:06.862 2c32fa1 Delete type=0 #4
+2025/12/19-18:06:06.863 2c32f94 Manual compaction at level-0 from '\x00\x07\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x08\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/12/19-18:59:52.728 2c32f92 Level-0 table #9: started
+2025/12/19-18:59:52.734 2c32f92 Level-0 table #9: 936 bytes OK
+2025/12/19-18:59:52.735 2c32f92 Delete type=0 #6
+2025/12/19-18:59:52.735 2c32f92 Manual compaction at level-0 from '\x00\x08\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x09\x00\x00\x00' @ 0 : 0; will stop at '\x00\x08\x00\x00\x05' @ 264 : 1
+2025/12/19-18:59:52.735 2c32f92 Compacting 1@0 + 1@1 files
+2025/12/19-18:59:52.736 2c32f92 Generated table #10@0: 35 keys, 864 bytes
+2025/12/19-18:59:52.736 2c32f92 Compacted 1@0 + 1@1 files => 864 bytes
+2025/12/19-18:59:52.736 2c32f92 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/12/19-18:59:52.737 2c32f92 Delete type=2 #9
+2025/12/19-18:59:52.737 2c32f92 Manual compaction at level-0 from '\x00\x08\x00\x00\x05' @ 264 : 1 .. '\x00\x09\x00\x00\x00' @ 0 : 0; will stop at (end)
