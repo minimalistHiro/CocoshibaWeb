@@ -324,7 +324,7 @@ class _StoreInfoSectionView extends StatelessWidget {
     final theme = Theme.of(context);
     final titleStyle = theme.textTheme.headlineSmall?.copyWith(
       fontWeight: FontWeight.w800,
-      color: theme.colorScheme.primary,
+      color: theme.colorScheme.onPrimary,
     );
 
     return LayoutBuilder(
@@ -333,26 +333,29 @@ class _StoreInfoSectionView extends StatelessWidget {
 
         final storeInfo = _StoreInfoPlain(theme: theme);
 
-        return SizedBox.expand(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Text('店舗情報', style: titleStyle),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 840),
-                      child: storeInfo,
+        return DecoratedBox(
+          decoration: BoxDecoration(color: theme.colorScheme.primary),
+          child: SizedBox.expand(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text('店舗情報', style: titleStyle),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 840),
+                        child: storeInfo,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -370,11 +373,11 @@ class _StoreInfoPlain extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = theme.textTheme.bodyLarge?.copyWith(
       height: 1.8,
-      color: theme.colorScheme.primary,
+      color: theme.colorScheme.onPrimary,
     );
     final subStyle = theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
-      color: theme.colorScheme.primary,
+      color: theme.colorScheme.onPrimary,
     );
 
     return Column(
@@ -407,7 +410,10 @@ class _StoreInfoPlain extends StatelessWidget {
                 storeInstagramUri,
                 mode: LaunchMode.externalApplication,
               ),
-              icon: const Icon(Icons.camera_alt_outlined),
+              icon: Icon(
+                Icons.camera_alt_outlined,
+                color: theme.colorScheme.onPrimary,
+              ),
               tooltip: 'Instagram',
             ),
             IconButton(
@@ -415,7 +421,10 @@ class _StoreInfoPlain extends StatelessWidget {
                 storeFacebookUri,
                 mode: LaunchMode.externalApplication,
               ),
-              icon: const Icon(Icons.facebook_outlined),
+              icon: Icon(
+                Icons.facebook_outlined,
+                color: theme.colorScheme.onPrimary,
+              ),
               tooltip: 'Facebook',
             ),
             IconButton(
@@ -423,7 +432,10 @@ class _StoreInfoPlain extends StatelessWidget {
                 storeXUri,
                 mode: LaunchMode.externalApplication,
               ),
-              icon: const Icon(Icons.alternate_email),
+              icon: Icon(
+                Icons.alternate_email,
+                color: theme.colorScheme.onPrimary,
+              ),
               tooltip: 'X',
             ),
           ],
