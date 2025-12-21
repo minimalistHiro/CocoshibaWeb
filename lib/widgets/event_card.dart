@@ -1,5 +1,6 @@
 import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class EventCard extends StatelessWidget {
@@ -18,29 +19,10 @@ class EventCard extends StatelessWidget {
   final int? imageCacheWidth;
   final int? imageCacheHeight;
 
-  String _formatDate(DateTime dateTime) {
-    final year = dateTime.year;
-    final month = dateTime.month.toString().padLeft(2, '0');
-    final day = dateTime.day.toString().padLeft(2, '0');
-    return '$year/$month/$day';
-  }
-
-  String _formatTimeRange(CalendarEvent event) {
-    String twoDigits(int value) => value.toString().padLeft(2, '0');
-    final start =
-        '${twoDigits(event.startDateTime.hour)}:${twoDigits(event.startDateTime.minute)}';
-    final end =
-        '${twoDigits(event.endDateTime.hour)}:${twoDigits(event.endDateTime.minute)}';
-    return event.isClosedDay ? '終日' : '$start〜$end';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasImage = event.imageUrls.isNotEmpty;
-    final organizerLabel =
-        event.organizer.trim().isNotEmpty ? event.organizer : '主催者情報なし';
-    const borderRadius = BorderRadius.all(Radius.circular(20));
+    const borderRadius = BorderRadius.zero;
 
     Widget buildImage() {
       final placeholder = Container(
@@ -54,6 +36,17 @@ class EventCard extends StatelessWidget {
       );
 
       if (!hasImage) return placeholder;
+      if (kIsWeb) {
+        return Image.network(
+          event.imageUrls.first,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => placeholder,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return placeholder;
+          },
+        );
+      }
       return CocoshibaNetworkImage(
         url: event.imageUrls.first,
         fit: BoxFit.cover,
@@ -67,83 +60,12 @@ class EventCard extends StatelessWidget {
         borderRadius: borderRadius,
         side: BorderSide(color: Colors.black.withOpacity(0.08)),
       ),
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: imageAspectRatio,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  buildImage(),
-                  if (event.isClosedDay)
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.82),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Text(
-                          '定休日',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_formatDate(event.startDateTime)}  ${_formatTimeRange(event)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade700,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    organizerLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade700,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        child: AspectRatio(
+          aspectRatio: imageAspectRatio,
+          child: buildImage(),
         ),
       ),
     );

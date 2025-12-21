@@ -15,11 +15,18 @@ class EventsPage extends StatefulWidget {
 class _EventsPageState extends State<EventsPage> {
   EventService? _eventService;
   late Stream<List<CalendarEvent>> _eventsStream;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _eventsStream = _createEventsStream();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Stream<List<CalendarEvent>> _createEventsStream() {
@@ -37,10 +44,11 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   int _crossAxisCount(double width) {
-    if (width >= 1000) return 4;
-    if (width >= 760) return 3;
-    if (width >= 520) return 2;
-    return 1;
+    return width < 520 ? 1 : 2;
+  }
+
+  double _childAspectRatio(double width) {
+    return width < 520 ? 2.0 : 1.0;
   }
 
   void _openDetail(CalendarEvent event) {
@@ -55,96 +63,169 @@ class _EventsPageState extends State<EventsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final firebaseReady = Firebase.apps.isNotEmpty;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'イベント',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 12),
-        if (!firebaseReady)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Firebase が初期化されていないため、イベント情報は表示できません。',
-                style: theme.textTheme.bodyMedium,
-              ),
+    Widget fadeSection({required int index, required Widget child}) {
+      return AnimatedBuilder(
+        animation: _scrollController,
+        builder: (context, builtChild) {
+          final hasOffset = _scrollController.hasClients &&
+              _scrollController.position.hasContentDimensions;
+          final page = hasOffset ? (_scrollController.offset / viewportHeight) : 0.0;
+          final delta = (page - index).abs();
+          final opacity = (1 - delta).clamp(0.0, 1.0);
+          final easedOpacity = Curves.easeOut.transform(opacity);
+          final translateY = 40 * delta;
+
+          return Opacity(
+            opacity: easedOpacity,
+            child: Transform.translate(
+              offset: Offset(0, translateY),
+              child: builtChild,
             ),
-          )
-        else
-          Expanded(
-            child: StreamBuilder<List<CalendarEvent>>(
-              stream: _eventsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    !snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          );
+        },
+        child: child,
+      );
+    }
 
-                if (snapshot.hasError) {
-                  return _ErrorState(
-                    title: 'イベントの取得に失敗しました',
-                    message: snapshot.error.toString(),
-                    onRetry: _reload,
-                  );
-                }
-
-                final events = snapshot.data ?? const <CalendarEvent>[];
-                final visibleEvents =
-                    events.where((event) => !event.isClosedDay).toList();
-
-                if (visibleEvents.isEmpty) {
-                  return const _EmptyState(
-                    icon: Icons.event_available_outlined,
-                    message: '既存イベントがまだありません',
-                  );
-                }
-
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final count = _crossAxisCount(constraints.maxWidth);
-                    final dpr = MediaQuery.of(context).devicePixelRatio;
-                    final spacing = count > 1 ? 16.0 : 12.0;
-                    final cardWidth =
-                        (constraints.maxWidth - spacing * (count - 1)) / count;
-                    final imageCacheWidth = (cardWidth * dpr).round();
-                    final imageCacheHeight = (cardWidth * dpr).round();
-
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(8),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: count,
-                        crossAxisSpacing: spacing,
-                        mainAxisSpacing: spacing,
-                        childAspectRatio: 0.78,
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          fadeSection(
+            index: 0,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final textColor = theme.colorScheme.primary;
+                return Column(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 4 / 3,
+                      child: Image.asset(
+                        'assets/images/IMG_5959.jpeg',
+                        fit: BoxFit.cover,
                       ),
-                      itemCount: visibleEvents.length,
-                      itemBuilder: (context, index) {
-                        final event = visibleEvents[index];
-                        return RepaintBoundary(
-                          child: EventCard(
-                            event: event,
-                            onTap: event.isClosedDay
-                                ? null
-                                : () => _openDetail(event),
-                            imageCacheWidth:
-                                imageCacheWidth > 0 ? imageCacheWidth : null,
-                            imageCacheHeight:
-                                imageCacheHeight > 0 ? imageCacheHeight : null,
-                          ),
-                        );
-                      },
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 48),
+                    Text(
+                      'イベント',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  Text(
+                    'ココシバでは、多彩なイベントを開催しています。\n予約が必要なもの、不要なものがございますので、是非お気軽にご参加下さい。',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: textColor,
+                      height: 1.8,
+                    ),
+                    ),
+                  ],
                 );
               },
             ),
           ),
-      ],
+          const SizedBox(height: 40),
+          if (!firebaseReady)
+            fadeSection(
+              index: 1,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Firebase が初期化されていないため、イベント情報は表示できません。',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ),
+            )
+          else
+            fadeSection(
+              index: 1,
+              child: StreamBuilder<List<CalendarEvent>>(
+                stream: _eventsStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return _ErrorState(
+                      title: 'イベントの取得に失敗しました',
+                      message: snapshot.error.toString(),
+                      onRetry: _reload,
+                    );
+                  }
+
+                  final events = snapshot.data ?? const <CalendarEvent>[];
+                  final visibleEvents =
+                      events.where((event) => !event.isClosedDay).toList();
+
+                  if (visibleEvents.isEmpty) {
+                    return const _EmptyState(
+                      icon: Icons.event_available_outlined,
+                      message: '既存イベントがまだありません',
+                    );
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final count = _crossAxisCount(constraints.maxWidth);
+                      final dpr = MediaQuery.of(context).devicePixelRatio;
+                      final spacing = count > 1 ? 16.0 : 12.0;
+                      final cardWidth = (constraints.maxWidth -
+                              spacing * (count - 1)) /
+                          count;
+                      final childAspectRatio =
+                          _childAspectRatio(constraints.maxWidth);
+                      final cardHeight = cardWidth / childAspectRatio;
+                      final imageCacheWidth = (cardWidth * dpr).round();
+                      final imageCacheHeight = (cardHeight * dpr).round();
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: count,
+                          crossAxisSpacing: spacing,
+                          mainAxisSpacing: spacing,
+                          childAspectRatio: childAspectRatio,
+                        ),
+                        itemCount: visibleEvents.length,
+                        itemBuilder: (context, index) {
+                          final event = visibleEvents[index];
+                          return RepaintBoundary(
+                            child: EventCard(
+                              event: event,
+                              onTap: event.isClosedDay
+                                  ? null
+                                  : () => _openDetail(event),
+                              imageAspectRatio: childAspectRatio,
+                              imageCacheWidth:
+                                  imageCacheWidth > 0 ? imageCacheWidth : null,
+                              imageCacheHeight: imageCacheHeight > 0
+                                  ? imageCacheHeight
+                                  : null,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
