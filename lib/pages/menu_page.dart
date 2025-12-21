@@ -131,7 +131,7 @@ class _MenuGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.1,
+        childAspectRatio: 0.75,
       ),
       itemCount: menus.length,
       itemBuilder: (context, index) => _MenuCard(menu: menus[index]),
@@ -149,44 +149,49 @@ class _MenuCard extends StatelessWidget {
     final theme = Theme.of(context);
     final subTextColor = theme.colorScheme.onSurfaceVariant;
 
-    return Card(
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _MenuImage(imageUrl: menu.imageUrl),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  menu.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  menu.category.label,
-                  style:
-                      theme.textTheme.bodySmall?.copyWith(color: subTextColor),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${menu.price}円',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            offset: const Offset(4, 4),
+            blurRadius: 10,
           ),
         ],
+      ),
+      child: ClipRect(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: _MenuImage(imageUrl: menu.imageUrl),
+            ),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    menu.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${menu.price}円',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
