@@ -34,6 +34,11 @@ service cloud.firestore {
       allow create, update, delete: if isOwner();
     }
 
+    match /menus/{menuId} {
+      allow read: if true;
+      allow create, update, delete: if isOwner();
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create, update, delete: if isSignedIn() && request.auth.uid == userId;

@@ -3,38 +3,99 @@ import 'package:cocoshibaweb/widgets/store_info_card.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class StorePage extends StatelessWidget {
+class StorePage extends StatefulWidget {
   const StorePage({super.key});
+
+  @override
+  State<StorePage> createState() => _StorePageState();
+}
+
+class _StorePageState extends State<StorePage> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _accessSectionKey = GlobalKey();
+  final GlobalKey _storeInfoSectionKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final viewportHeight = MediaQuery.sizeOf(context).height;
 
-    return ListView(
-      children: [
-        Center(
-          child: Text(
-            'アクセス',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+    Widget fadeSection({required GlobalKey sectionKey, required Widget child}) {
+      return AnimatedBuilder(
+        animation: _scrollController,
+        builder: (context, builtChild) {
+          final renderObject = sectionKey.currentContext?.findRenderObject();
+          if (renderObject is! RenderBox || !renderObject.hasSize) {
+            return builtChild ?? const SizedBox.shrink();
+          }
+          final offset = renderObject.localToGlobal(Offset.zero);
+          final normalized = offset.dy / viewportHeight;
+          const start = 0.9;
+          const end = 0.2;
+          final t = ((start - normalized) / (start - end)).clamp(0.0, 1.0);
+          final easedOpacity = Curves.easeOut.transform(t);
+          final translateY = (1 - easedOpacity) * 40;
+
+          return Opacity(
+            opacity: easedOpacity,
+            child: Transform.translate(
+              offset: Offset(0, translateY),
+              child: builtChild,
+            ),
+          );
+        },
+        child: KeyedSubtree(key: sectionKey, child: child),
+      );
+    }
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        children: [
+          fadeSection(
+            sectionKey: _accessSectionKey,
+            child: Column(
+              children: [
+                Center(
+                  child: Text(
+                    'アクセス',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const _StoreAccessSection(),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        const _StoreAccessSection(),
-        const SizedBox(height: 32),
-        Center(
-          child: Text(
-            '店舗情報',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+          const SizedBox(height: 128),
+          fadeSection(
+            sectionKey: _storeInfoSectionKey,
+            child: Column(
+              children: [
+                Center(
+                  child: Text(
+                    '店舗情報',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const _StoreInfoSection(),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        const _StoreInfoSection(),
-        const SizedBox(height: 12),
-      ],
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 }
@@ -216,6 +277,7 @@ class _StoreInfoSection extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 164),
       ],
     );
   }

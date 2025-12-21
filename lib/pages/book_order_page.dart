@@ -32,14 +32,11 @@ class BookOrderPage extends StatelessWidget {
 
     return ListView(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: AspectRatio(
-            aspectRatio: 16 / 7,
-            child: Image.asset(
-              'assets/images/books_hero.jpeg',
-              fit: BoxFit.cover,
-            ),
+        AspectRatio(
+          aspectRatio: 16 / 7,
+          child: Image.asset(
+            'assets/images/books_hero.jpeg',
+            fit: BoxFit.cover,
           ),
         ),
         const SizedBox(height: 20),
