@@ -376,6 +376,7 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
           section: widget.section,
           textColor: textColor,
           maxWidth: isWide ? constraints.maxWidth * 0.7 : constraints.maxWidth,
+          scaleWithWidth: !isWide,
         );
 
         return SizedBox.expand(
@@ -400,7 +401,7 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Transform.translate(
-                    offset: const Offset(0, -115),
+                    offset: const Offset(0, -70),
                     child: textBlock,
                   ),
                 ),
@@ -459,6 +460,7 @@ class _HandmadeHighlightSectionViewState
           section: widget.section,
           textColor: textColor,
           maxWidth: isWide ? constraints.maxWidth * 0.42 : constraints.maxWidth,
+          scaleWithWidth: !isWide,
         );
 
         return SizedBox.expand(
@@ -500,7 +502,7 @@ class _HandmadeHighlightSectionViewState
                       ),
                       const SizedBox(height: 12),
                       Align(
-                        alignment: Alignment.centerLeft,
+                        alignment: Alignment.centerRight,
                         child: Transform.translate(
                           offset: const Offset(0, -70),
                           child: textBlock,
@@ -632,7 +634,12 @@ class _EventBodyText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isQuietSubtitle = section.subtitle == 'ふらっと立ち寄れる読書席';
+    const scaledSubtitles = [
+      'ふらっと立ち寄れる読書席',
+      'ボードゲーム会やLIVE',
+      'ハンドメイド・スローマーケット',
+    ];
+    final isScaledSection = scaledSubtitles.contains(section.subtitle);
     final baseSubtitleStyle = theme.textTheme.titleMedium?.copyWith(
       color: textColor,
       fontWeight: FontWeight.w600,
@@ -645,11 +652,11 @@ class _EventBodyText extends StatelessWidget {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         final baseMaxWidth = maxWidth ?? availableWidth;
-        final textScale = isQuietSubtitle && scaleWithWidth
+        final textScale = isScaledSection && scaleWithWidth
             ? (availableWidth / 600).clamp(0.64, 1.0)
             : 1.0;
         final scaledMaxWidth =
-            isQuietSubtitle ? baseMaxWidth * textScale : baseMaxWidth;
+            isScaledSection ? baseMaxWidth * textScale : baseMaxWidth;
         final titleStyle = theme.textTheme.headlineSmall?.copyWith(
           color: textColor,
           fontWeight: FontWeight.w700,
