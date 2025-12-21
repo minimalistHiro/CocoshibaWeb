@@ -501,7 +501,10 @@ class _HandmadeHighlightSectionViewState
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: textBlock,
+                        child: Transform.translate(
+                          offset: const Offset(0, -70),
+                          child: textBlock,
+                        ),
                       ),
                     ],
                   ),
@@ -555,6 +558,7 @@ class _QuietHighlightSectionViewState
           section: widget.section,
           textColor: textColor,
           maxWidth: isWide ? constraints.maxWidth * 0.4 : constraints.maxWidth,
+          scaleWithWidth: !isWide,
         );
 
         final sectionPadding = isWide
@@ -580,7 +584,7 @@ class _QuietHighlightSectionViewState
                   )
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Align(
                         alignment: Alignment.center,
@@ -595,10 +599,13 @@ class _QuietHighlightSectionViewState
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
                       Align(
-                        alignment: Alignment.centerRight,
-                        child: textBlock,
+                        alignment: Alignment.centerLeft,
+                        child: Transform.translate(
+                          offset: const Offset(0, -32),
+                          child: textBlock,
+                        ),
                       ),
                     ],
                   ),
@@ -614,61 +621,92 @@ class _EventBodyText extends StatelessWidget {
     required this.section,
     required this.textColor,
     required this.maxWidth,
+    this.scaleWithWidth = true,
   });
 
   final _StorySection section;
   final Color textColor;
   final double? maxWidth;
+  final bool scaleWithWidth;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isQuietSubtitle = section.subtitle == 'ふらっと立ち寄れる読書席';
+    final baseSubtitleStyle = theme.textTheme.titleMedium?.copyWith(
+      color: textColor,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.8,
+    );
 
-    return ConstrainedBox(
-      constraints:
-          maxWidth != null ? BoxConstraints(maxWidth: maxWidth!) : const BoxConstraints(),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                section.subtitle,
-                textAlign: TextAlign.left,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final baseMaxWidth = maxWidth ?? availableWidth;
+        final textScale = isQuietSubtitle && scaleWithWidth
+            ? (availableWidth / 600).clamp(0.64, 1.0)
+            : 1.0;
+        final scaledMaxWidth =
+            isQuietSubtitle ? baseMaxWidth * textScale : baseMaxWidth;
+        final titleStyle = theme.textTheme.headlineSmall?.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w700,
+          height: 1.3,
+        );
+        final bodyStyle = theme.textTheme.bodyLarge?.copyWith(
+          color: textColor,
+          height: 1.8,
+        );
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: scaledMaxWidth),
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    section.subtitle,
+                    textAlign: TextAlign.left,
+                    style: baseSubtitleStyle?.copyWith(
+                      fontSize: baseSubtitleStyle.fontSize != null
+                          ? baseSubtitleStyle.fontSize! * textScale
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    section.title,
+                    textAlign: TextAlign.left,
+                    style: titleStyle?.copyWith(
+                      fontSize: titleStyle.fontSize != null
+                          ? titleStyle.fontSize! * textScale
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    section.body,
+                    textAlign: TextAlign.left,
+                    style: bodyStyle?.copyWith(
+                      fontSize: bodyStyle.fontSize != null
+                          ? bodyStyle.fontSize! * textScale
+                          : null,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                section.title,
-                textAlign: TextAlign.left,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                section.body,
-                textAlign: TextAlign.left,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: textColor,
-                  height: 1.8,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
