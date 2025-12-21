@@ -8,10 +8,10 @@ class BookOrderPage extends StatelessWidget {
     'https://docs.google.com/forms/d/e/1FAIpQLSda9VfM-EMborsiY-h11leW1uXgNUPdwv3RFb4_I1GjwFSoOQ/viewform?pli=1',
   );
 
-  static const String _description = '「ココシバは本屋さんててたりとと提携し、新刊書籍・雑誌を注文することができます。\n'
+  static const String _description = 'ココシバは本屋さんててたりとと提携し、新刊書籍・雑誌を注文することができます。\n'
       '\n'
       '入荷し次第、ご連絡させていただきますが、到着までは数日～10日程度。\n'
-      'ときには2週間以上かかる場合もございます。ご了承ください。」';
+      'ときには2週間以上かかる場合もございます。ご了承ください。';
 
   Future<void> _openOrderForm(BuildContext context) async {
     final ok = await launchUrl(
@@ -47,11 +47,13 @@ class BookOrderPage extends StatelessWidget {
           '本の注文',
           style: theme.textTheme.headlineSmall
               ?.copyWith(fontWeight: FontWeight.w800),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
         Text(
           _description,
           style: theme.textTheme.bodyLarge?.copyWith(height: 1.7),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 28),
         _BookOrderButton(

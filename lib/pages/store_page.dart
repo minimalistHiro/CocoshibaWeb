@@ -93,13 +93,23 @@ class _StoreAccessSection extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '①JR京浜東北線蕨駅下車、蕨駅東口階段下りて東武ストアの前を直進。\n'
+                  '②交差点をマクドナルド方面に直進。\n'
+                  '③サーティーワンの角を左折。\n'
+                  '④まっすぐ行くと芝銀座入口が見えます。\n'
+                  '⑤交差点を渡って、芝銀座に入り約80ｍでココシバです。',
+                  style: textStyle,
+                  textAlign: TextAlign.left,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
             Text(
-              '①JR京浜東北線蕨駅下車、蕨駅東口階段下りて東武ストアの前を直進。\n'
-              '②交差点をマクドナルド方面に直進。\n'
-              '③サーティーワンの角を左折。\n'
-              '④まっすぐ行くと芝銀座入口が見えます。\n'
-              '⑤交差点を渡って、芝銀座に入り約80ｍでココシバです。\n'
-              '\n'
               '駅から348m、約6分の距離です。',
               style: textStyle,
               textAlign: TextAlign.center,

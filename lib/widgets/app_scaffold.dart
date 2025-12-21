@@ -1,6 +1,7 @@
 import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/router.dart';
+import 'package:cocoshibaweb/widgets/menu_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -167,30 +168,119 @@ Widget _buildUserAvatar(AuthUser user, {double radius = 16}) {
   );
 }
 
-class AppScaffold extends StatelessWidget {
+class AppScaffold extends StatefulWidget {
   const AppScaffold({super.key, required this.child});
 
   final Widget child;
 
   @override
+  State<AppScaffold> createState() => _AppScaffoldState();
+}
+
+class _AppScaffoldState extends State<AppScaffold>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _menuController;
+  late final Animation<double> _menuFade;
+  late final Animation<Offset> _menuSlide;
+  bool _isMenuVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _menuController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _menuFade = CurvedAnimation(
+      parent: _menuController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+    _menuSlide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _menuController,
+        curve: Curves.easeOut,
+        reverseCurve: Curves.easeIn,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _menuController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openMenu() async {
+    if (_isMenuVisible) return;
+    setState(() => _isMenuVisible = true);
+    await _menuController.forward();
+  }
+
+  Future<void> _closeMenu() async {
+    if (!_isMenuVisible) return;
+    await _menuController.reverse();
+    if (!mounted) return;
+    setState(() => _isMenuVisible = false);
+  }
+
+  Future<void> _toggleMenu() async {
+    if (_isMenuVisible) {
+      await _closeMenu();
+    } else {
+      await _openMenu();
+    }
+  }
+
+  Future<void> _navigateFromMenu(String path) async {
+    await _closeMenu();
+    if (!mounted) return;
+    context.go(path);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const _AppHeader(),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: child,
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: _AppHeader(
+            onMenuPressed: _toggleMenu,
+            menuProgress: _menuController,
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: widget.child,
+              ),
+            ),
           ),
         ),
-      ),
+        if (_isMenuVisible)
+          MenuOverlay(
+            fade: _menuFade,
+            slide: _menuSlide,
+            onClose: _closeMenu,
+            onNavigate: _navigateFromMenu,
+          ),
+      ],
     );
   }
 }
 
 class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
-  const _AppHeader();
+  const _AppHeader({
+    required this.onMenuPressed,
+    required this.menuProgress,
+  });
+
+  final VoidCallback onMenuPressed;
+  final Animation<double> menuProgress;
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
@@ -284,28 +374,13 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 const Spacer(),
               ] else ...[
                 const Spacer(),
-                PopupMenuButton<String>(
+                IconButton(
                   tooltip: 'メニュー',
-                  onSelected: (value) => context.go(value),
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                        value: CocoshibaPaths.home, child: Text('ホーム')),
-                    PopupMenuItem(
-                      value: CocoshibaPaths.events,
-                      child: Text('イベント'),
-                    ),
-                    PopupMenuItem(
-                      value: CocoshibaPaths.calendar,
-                      child: Text('カレンダー'),
-                    ),
-                    PopupMenuItem(
-                        value: CocoshibaPaths.menu, child: Text('メニュー')),
-                    PopupMenuItem(
-                        value: CocoshibaPaths.bookOrder, child: Text('本の注文')),
-                    PopupMenuItem(
-                        value: CocoshibaPaths.store, child: Text('店舗情報')),
-                  ],
-                  icon: const Icon(Icons.menu),
+                  onPressed: onMenuPressed,
+                  icon: AnimatedIcon(
+                    icon: AnimatedIcons.menu_close,
+                    progress: menuProgress,
+                  ),
                 ),
               ],
               StreamBuilder(
