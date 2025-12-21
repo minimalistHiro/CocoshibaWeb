@@ -54,11 +54,16 @@ class _MenuPageState extends State<MenuPage>
     final subTextColor = theme.colorScheme.onSurfaceVariant;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('メニュー',
+        Center(
+          child: Text(
+            'メニュー',
+            textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w800)),
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
         const SizedBox(height: 12),
         const SizedBox(height: 4),
         TabBar(
@@ -118,30 +123,18 @@ class _MenuGrid extends StatelessWidget {
 
   final List<MenuItem> menus;
 
-  int _crossAxisCount(double width) {
-    if (width >= 1000) return 4;
-    if (width >= 760) return 3;
-    if (width >= 520) return 2;
-    return 1;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final count = _crossAxisCount(constraints.maxWidth);
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: count,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.78,
-          ),
-          itemCount: menus.length,
-          itemBuilder: (context, index) => _MenuCard(menu: menus[index]),
-        );
-      },
+    return GridView.builder(
+      padding: const EdgeInsets.all(8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: menus.length,
+      itemBuilder: (context, index) => _MenuCard(menu: menus[index]),
     );
   }
 }
@@ -157,17 +150,17 @@ class _MenuCard extends StatelessWidget {
     final subTextColor = theme.colorScheme.onSurfaceVariant;
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      clipBehavior: Clip.hardEdge,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AspectRatio(
-            aspectRatio: 4 / 3,
+            aspectRatio: 16 / 9,
             child: _MenuImage(imageUrl: menu.imageUrl),
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -178,13 +171,13 @@ class _MenuCard extends StatelessWidget {
                   style: theme.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   menu.category.label,
                   style:
                       theme.textTheme.bodySmall?.copyWith(color: subTextColor),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   '${menu.price}円',
                   style: theme.textTheme.titleMedium

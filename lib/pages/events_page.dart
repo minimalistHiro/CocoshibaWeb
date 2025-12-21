@@ -62,6 +62,7 @@ class _EventsPageState extends State<EventsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const textColor = Colors.black;
     final firebaseReady = Firebase.apps.isNotEmpty;
     final viewportHeight = MediaQuery.sizeOf(context).height;
 
@@ -98,7 +99,6 @@ class _EventsPageState extends State<EventsPage> {
             index: 0,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final textColor = theme.colorScheme.primary;
                 return Column(
                   children: [
                     AspectRatio(
@@ -119,10 +119,10 @@ class _EventsPageState extends State<EventsPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                  Text(
-                    'ココシバでは、多彩なイベントを開催しています。\n予約が必要なもの、不要なものがございますので、是非お気軽にご参加下さい。',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    Text(
+                      'ココシバでは、多彩なイベントを開催しています。\n予約が必要なもの、不要なものがございますので、是非お気軽にご参加下さい。',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                       color: textColor,
                       height: 1.8,
                     ),
@@ -136,15 +136,17 @@ class _EventsPageState extends State<EventsPage> {
           if (!firebaseReady)
             fadeSection(
               index: 1,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Firebase が初期化されていないため、イベント情報は表示できません。',
-                    style: theme.textTheme.bodyMedium,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'Firebase が初期化されていないため、イベント情報は表示できません。',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                      ),
+                    ),
                   ),
                 ),
-              ),
             )
           else
             fadeSection(
@@ -247,7 +249,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             message,
-            style: theme.textTheme.bodyLarge,
+            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.black),
             textAlign: TextAlign.center,
           ),
         ],
@@ -271,6 +273,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    const textColor = Colors.black;
 
     return Center(
       child: ConstrainedBox(
@@ -291,7 +294,7 @@ class _ErrorState extends StatelessWidget {
                     Text(
                       title,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onErrorContainer,
+                        color: textColor,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -301,7 +304,7 @@ class _ErrorState extends StatelessWidget {
                 Text(
                   message,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onErrorContainer,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -309,6 +312,8 @@ class _ErrorState extends StatelessWidget {
                   onPressed: onRetry,
                   icon: const Icon(Icons.refresh),
                   label: const Text('再読み込み'),
+                  style:
+                      FilledButton.styleFrom(foregroundColor: textColor),
                 ),
               ],
             ),
