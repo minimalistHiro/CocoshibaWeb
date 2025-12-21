@@ -762,13 +762,21 @@ class _HandmadeCollage extends StatelessWidget {
             asset: 'assets/images/IMG_1680.png',
             size: primarySize,
             baseOffset: primaryOffset,
-            layout: layout.first,
+            layout: _CollageImageLayout(
+              offset: layout.first.offset,
+              rotation: layout.first.rotation,
+              zIndex: 1,
+            ),
           ),
           _CollageImageSpec(
             asset: 'assets/images/IMG_1681.jpeg',
             size: secondarySize,
             baseOffset: secondaryOffset,
-            layout: layout.second,
+            layout: _CollageImageLayout(
+              offset: layout.second.offset,
+              rotation: layout.second.rotation,
+              zIndex: 2,
+            ),
           ),
         ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
 
@@ -855,13 +863,21 @@ class _QuietCollage extends StatelessWidget {
             asset: 'assets/images/IMG_1683.jpeg',
             size: secondarySize,
             baseOffset: secondaryOffset,
-            layout: layout.second,
+            layout: _CollageImageLayout(
+              offset: layout.second.offset,
+              rotation: layout.second.rotation,
+              zIndex: 1,
+            ),
           ),
           _CollageImageSpec(
             asset: 'assets/images/IMG_1682.jpeg',
             size: primarySize,
             baseOffset: primaryOffset,
-            layout: layout.first,
+            layout: _CollageImageLayout(
+              offset: layout.first.offset,
+              rotation: layout.first.rotation,
+              zIndex: 2,
+            ),
           ),
         ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
 
@@ -959,19 +975,29 @@ class _EventCollage extends StatelessWidget {
                 rotation: 0,
                 zIndex: layout.second.zIndex,
               );
+        final primaryLayout = _CollageImageLayout(
+          offset: layout.first.offset,
+          rotation: layout.first.rotation,
+          zIndex: 1,
+        );
+        final topSecondaryLayout = _CollageImageLayout(
+          offset: secondaryLayout.offset,
+          rotation: secondaryLayout.rotation,
+          zIndex: 2,
+        );
 
         final imageWidgets = <_CollageImageSpec>[
           _CollageImageSpec(
             asset: 'assets/images/event_connecting_green.jpeg',
             size: primarySize,
             baseOffset: primaryOffset,
-            layout: layout.first,
+            layout: primaryLayout,
           ),
           _CollageImageSpec(
             asset: 'assets/images/IMG_3803.jpeg',
             size: secondarySize,
             baseOffset: secondaryOffset,
-            layout: secondaryLayout,
+            layout: topSecondaryLayout,
             alignment: Alignment.center,
           ),
         ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
