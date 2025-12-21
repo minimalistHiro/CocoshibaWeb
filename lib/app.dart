@@ -54,6 +54,10 @@ class _CocoshibaWebAppState extends State<CocoshibaWebApp> {
             surface: cocoshibaBackgroundColor,
             secondaryContainer: cocoshibaSubColor,
           ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+          ),
           scaffoldBackgroundColor: cocoshibaBackgroundColor,
           textTheme: GoogleFonts.sawarabiMinchoTextTheme(baseTextTheme),
           useMaterial3: true,
