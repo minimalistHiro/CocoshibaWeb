@@ -391,17 +391,9 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
                   if (!isLoggedIn) {
                     if (isCompact) {
-                      return PopupMenuButton<String>(
-                        tooltip: 'アカウント',
-                        onSelected: (value) => context.go(value),
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: CocoshibaPaths.signup,
-                            child: Text('アカウント作成'),
-                          ),
-                          PopupMenuItem(
-                              value: CocoshibaPaths.login, child: Text('ログイン')),
-                        ],
+                      return IconButton(
+                        tooltip: 'ログイン',
+                        onPressed: () => context.go(CocoshibaPaths.login),
                         icon: const Icon(Icons.person_outline),
                       );
                     }
