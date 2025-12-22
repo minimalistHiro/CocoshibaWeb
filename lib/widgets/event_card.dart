@@ -22,7 +22,6 @@ class EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = event.imageUrls.isNotEmpty;
-    const borderRadius = BorderRadius.zero;
 
     Widget buildImage() {
       final placeholder = Container(
@@ -54,18 +53,27 @@ class EventCard extends StatelessWidget {
       );
     }
 
-    return Material(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: borderRadius,
-        side: BorderSide(color: Colors.black.withOpacity(0.08)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            offset: const Offset(4, 4),
+            blurRadius: 10,
+          ),
+        ],
       ),
-      clipBehavior: Clip.hardEdge,
-      child: InkWell(
-        onTap: onTap,
-        child: AspectRatio(
-          aspectRatio: imageAspectRatio,
-          child: buildImage(),
+      child: ClipRect(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: AspectRatio(
+              aspectRatio: imageAspectRatio,
+              child: buildImage(),
+            ),
+          ),
         ),
       ),
     );

@@ -183,6 +183,7 @@ class _EventsPageState extends State<EventsPage> {
                       final count = _crossAxisCount(constraints.maxWidth);
                       final dpr = MediaQuery.of(context).devicePixelRatio;
                       final spacing = count > 1 ? 16.0 : 12.0;
+                      final verticalSpacing = count > 1 ? 40.0 : 30.0;
                       final cardWidth = (constraints.maxWidth -
                               spacing * (count - 1)) /
                           count;
@@ -199,7 +200,7 @@ class _EventsPageState extends State<EventsPage> {
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: count,
                           crossAxisSpacing: spacing,
-                          mainAxisSpacing: spacing,
+                          mainAxisSpacing: verticalSpacing,
                           childAspectRatio: childAspectRatio,
                         ),
                         itemCount: visibleEvents.length,
