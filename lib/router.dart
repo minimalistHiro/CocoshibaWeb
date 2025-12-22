@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/book_order_page.dart';
+import 'package:cocoshibaweb/pages/data_privacy_page.dart';
 import 'package:cocoshibaweb/pages/faq_page.dart';
 import 'package:cocoshibaweb/pages/event_create_page.dart';
 import 'package:cocoshibaweb/pages/events_page.dart';
@@ -13,9 +14,11 @@ import 'package:cocoshibaweb/pages/menu_page.dart';
 import 'package:cocoshibaweb/pages/password_reset_page.dart';
 import 'package:cocoshibaweb/pages/password_reset_sent_page.dart';
 import 'package:cocoshibaweb/pages/profile_edit_page.dart';
+import 'package:cocoshibaweb/pages/privacy_policy_page.dart';
 import 'package:cocoshibaweb/pages/signup_page.dart';
 import 'package:cocoshibaweb/pages/store_page.dart';
 import 'package:cocoshibaweb/pages/support_help_page.dart';
+import 'package:cocoshibaweb/pages/terms_page.dart';
 import 'package:cocoshibaweb/widgets/app_scaffold.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -37,8 +40,11 @@ class CocoshibaPaths {
   static const passwordResetSent = '/_/password-reset/sent';
   static const profileEdit = '/_/profile/edit';
   static const loginInfoUpdate = '/_/login-info';
+  static const dataPrivacy = '/_/data-privacy';
   static const supportHelp = '/_/support';
   static const faq = '/_/faq';
+  static const terms = '/_/terms';
+  static const privacyPolicy = '/_/privacy-policy';
 }
 
 class AuthRefreshNotifier extends ChangeNotifier {
@@ -160,12 +166,24 @@ class CocoshibaRouter {
                   builder: (context, state) => const LoginInfoUpdatePage(),
                 ),
                 GoRoute(
+                  path: CocoshibaPaths.dataPrivacy,
+                  builder: (context, state) => const DataPrivacyPage(),
+                ),
+                GoRoute(
                   path: CocoshibaPaths.supportHelp,
                   builder: (context, state) => const SupportHelpPage(),
                 ),
                 GoRoute(
                   path: CocoshibaPaths.faq,
                   builder: (context, state) => const FaqPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.terms,
+                  builder: (context, state) => const TermsPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.privacyPolicy,
+                  builder: (context, state) => const PrivacyPolicyPage(),
                 ),
               ],
             ),

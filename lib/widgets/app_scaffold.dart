@@ -106,8 +106,15 @@ Future<void> _showAccountItemsDialog(
                 },
               ),
               sectionHeader('データとサポート'),
-              item(Icons.privacy_tip_outlined, 'データとプライバシー',
-                  subtitle: 'データの確認・エクスポート・削除'),
+              linkItem(
+                Icons.privacy_tip_outlined,
+                'データとプライバシー',
+                subtitle: 'データの確認・エクスポート・削除',
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  rootContext.go(CocoshibaPaths.dataPrivacy);
+                },
+              ),
               linkItem(
                 Icons.help_outline,
                 'サポート・ヘルプ',
@@ -115,6 +122,24 @@ Future<void> _showAccountItemsDialog(
                 onTap: () {
                   Navigator.of(dialogContext).pop();
                   rootContext.go(CocoshibaPaths.supportHelp);
+                },
+              ),
+              linkItem(
+                Icons.article_outlined,
+                '利用規約',
+                subtitle: 'サービス利用のルール',
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  rootContext.go(CocoshibaPaths.terms);
+                },
+              ),
+              linkItem(
+                Icons.privacy_tip_outlined,
+                'プライバシーポリシー',
+                subtitle: '個人情報の取り扱い',
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  rootContext.go(CocoshibaPaths.privacyPolicy);
                 },
               ),
               sectionHeader('管理者設定（管理者のみ）'),
