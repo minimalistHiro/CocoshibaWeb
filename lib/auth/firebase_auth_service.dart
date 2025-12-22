@@ -93,8 +93,33 @@ class FirebaseAuthService implements AuthService {
   Future<void> signOut() => _auth.signOut();
 
   @override
-  Future<void> sendPasswordResetEmail({required String email}) =>
-      _auth.sendPasswordResetEmail(email: email);
+  Future<void> sendPasswordResetEmail({
+    required String email,
+    String? continueUrl,
+  }) {
+    final normalizedEmail = email.trim();
+    if (continueUrl == null || continueUrl.isEmpty) {
+      return _auth.sendPasswordResetEmail(email: normalizedEmail);
+    }
+    return _auth.sendPasswordResetEmail(
+      email: normalizedEmail,
+      actionCodeSettings: ActionCodeSettings(
+        url: continueUrl,
+        handleCodeInApp: true,
+      ),
+    );
+  }
+
+  @override
+  Future<String> verifyPasswordResetCode({required String code}) =>
+      _auth.verifyPasswordResetCode(code);
+
+  @override
+  Future<void> confirmPasswordReset({
+    required String code,
+    required String newPassword,
+  }) =>
+      _auth.confirmPasswordReset(code: code, newPassword: newPassword);
 
   @override
   Future<void> deleteAccount({String? passwordForReauth}) async {

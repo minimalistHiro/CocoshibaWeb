@@ -134,33 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: _isBusy
-                        ? null
-                        : () async {
-                            final email = _emailController.text.trim();
-                            if (email.isEmpty || !email.contains('@')) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('メールアドレスを入力してください')),
-                              );
-                              return;
-                            }
-                            setState(() => _isBusy = true);
-                            try {
-                              await auth.sendPasswordResetEmail(email: email);
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('パスワードリセットメールを送信しました')),
-                              );
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('送信に失敗しました: $e')),
-                              );
-                            } finally {
-                              if (mounted) setState(() => _isBusy = false);
-                            }
-                          },
+                    onPressed: () => context.go(CocoshibaPaths.passwordReset),
                     child: const Text('パスワードを忘れた方はこちら'),
                   ),
                 ),

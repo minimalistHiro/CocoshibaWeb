@@ -10,6 +10,8 @@ import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
 import 'package:cocoshibaweb/pages/login_page.dart';
 import 'package:cocoshibaweb/pages/menu_page.dart';
+import 'package:cocoshibaweb/pages/password_reset_page.dart';
+import 'package:cocoshibaweb/pages/password_reset_sent_page.dart';
 import 'package:cocoshibaweb/pages/profile_edit_page.dart';
 import 'package:cocoshibaweb/pages/signup_page.dart';
 import 'package:cocoshibaweb/pages/store_page.dart';
@@ -31,6 +33,8 @@ class CocoshibaPaths {
 
   static const login = '/_/login';
   static const signup = '/_/signup';
+  static const passwordReset = '/_/password-reset';
+  static const passwordResetSent = '/_/password-reset/sent';
   static const profileEdit = '/_/profile/edit';
   static const loginInfoUpdate = '/_/login-info';
   static const supportHelp = '/_/support';
@@ -132,6 +136,19 @@ class CocoshibaRouter {
                   path: CocoshibaPaths.signup,
                   builder: (context, state) => SignupPage(
                     from: state.uri.queryParameters['from'],
+                  ),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.passwordReset,
+                  builder: (context, state) => PasswordResetPage(
+                    oobCode: state.uri.queryParameters['oobCode'],
+                    mode: state.uri.queryParameters['mode'],
+                  ),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.passwordResetSent,
+                  builder: (context, state) => PasswordResetSentPage(
+                    email: state.uri.queryParameters['email'],
                   ),
                 ),
                 GoRoute(

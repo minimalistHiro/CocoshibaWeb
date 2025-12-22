@@ -26,7 +26,17 @@ abstract class AuthService {
 
   Future<void> signOut();
 
-  Future<void> sendPasswordResetEmail({required String email});
+  Future<void> sendPasswordResetEmail({
+    required String email,
+    String? continueUrl,
+  });
+
+  Future<String> verifyPasswordResetCode({required String code});
+
+  Future<void> confirmPasswordReset({
+    required String code,
+    required String newPassword,
+  });
 
   Future<void> deleteAccount({String? passwordForReauth});
 }

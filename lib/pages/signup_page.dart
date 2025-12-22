@@ -161,55 +161,56 @@ class _SignupPageState extends State<SignupPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    FilledButton(
-                      onPressed: _isBusy
-                          ? null
-                          : () async {
-                              if (!_formKey.currentState!.validate()) return;
-                              setState(() => _isBusy = true);
-                              try {
-                                await auth.signUpWithEmailAndPassword(
-                                  email: _emailController.text.trim(),
-                                  password: _passwordController.text,
-                                );
-                                if (!context.mounted) return;
-                                final from = widget.from;
-                                if (from != null && from.isNotEmpty) {
-                                  context.go(Uri.decodeComponent(from));
-                                } else {
-                                  context.go(CocoshibaPaths.home);
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: FilledButton(
+                        onPressed: _isBusy
+                            ? null
+                            : () async {
+                                if (!_formKey.currentState!.validate()) return;
+                                setState(() => _isBusy = true);
+                                try {
+                                  await auth.signUpWithEmailAndPassword(
+                                    email: _emailController.text.trim(),
+                                    password: _passwordController.text,
+                                  );
+                                  if (!context.mounted) return;
+                                  final from = widget.from;
+                                  if (from != null && from.isNotEmpty) {
+                                    context.go(Uri.decodeComponent(from));
+                                  } else {
+                                    context.go(CocoshibaPaths.home);
+                                  }
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('作成に失敗しました: $e')),
+                                  );
+                                } finally {
+                                  if (mounted) setState(() => _isBusy = false);
                                 }
-                              } catch (e) {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('作成に失敗しました: $e')),
-                                );
-                              } finally {
-                                if (mounted) setState(() => _isBusy = false);
-                              }
-                            },
-                      child: _isBusy
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('作成する'),
-                    ),
-                    OutlinedButton(
-                      onPressed: _isBusy
-                          ? null
-                          : () {
-                              final from = widget.from;
-                              final suffix =
-                                  from == null || from.isEmpty ? '' : '?from=$from';
-                              context.go('${CocoshibaPaths.login}$suffix');
-                            },
-                      child: const Text('ログインへ'),
+                              },
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: _isBusy
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('新規アカウント作成'),
+                      ),
                     ),
                   ],
                 ),
