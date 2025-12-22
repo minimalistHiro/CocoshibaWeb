@@ -10,37 +10,26 @@ class MenuPage extends StatefulWidget {
   State<MenuPage> createState() => _MenuPageState();
 }
 
-class _MenuPageState extends State<MenuPage>
-    with SingleTickerProviderStateMixin {
+class _MenuPageState extends State<MenuPage> {
   final MenuService _menuService = MenuService();
   late Stream<List<MenuItem>> _menusStream;
-  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _menusStream = _menuService.watchMenus();
-    _tabController =
-        TabController(length: MenuCategory.values.length, vsync: this);
-    _tabController.addListener(_handleTabChange);
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_handleTabChange);
-    _tabController.dispose();
     super.dispose();
   }
 
-  void _handleTabChange() {
-    if (_tabController.indexIsChanging) return;
-    setState(() {});
-  }
-
-  List<MenuItem> _filteredMenus(List<MenuItem> menus) {
-    final selected = MenuCategory.values[_tabController.index];
-    return menus.where((menu) => menu.category == selected).toList();
-  }
+  List<MenuCategory> get _categoryOrder => const [
+        MenuCategory.food,
+        MenuCategory.drink,
+        MenuCategory.beer,
+      ];
 
   void _reloadMenus() {
     setState(() {
@@ -51,8 +40,6 @@ class _MenuPageState extends State<MenuPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subTextColor = theme.colorScheme.onSurfaceVariant;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -63,17 +50,6 @@ class _MenuPageState extends State<MenuPage>
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w800),
           ),
-        ),
-        const SizedBox(height: 12),
-        const SizedBox(height: 4),
-        TabBar(
-          controller: _tabController,
-          labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: subTextColor,
-          indicatorColor: theme.colorScheme.primary,
-          tabs: MenuCategory.values
-              .map((category) => Tab(text: category.label))
-              .toList(),
         ),
         const SizedBox(height: 12),
         Expanded(
@@ -100,16 +76,27 @@ class _MenuPageState extends State<MenuPage>
                 );
               }
 
-              final filtered = _filteredMenus(menus);
-              if (filtered.isEmpty) {
-                final selected = MenuCategory.values[_tabController.index];
-                return _EmptyState(
-                  icon: Icons.search_off_outlined,
-                  message: '${selected.label} のメニューはまだありません',
-                );
-              }
-
-              return _MenuGrid(menus: filtered);
+              return ListView(
+                padding: const EdgeInsets.only(bottom: 24),
+                children: [
+                  for (final category in _categoryOrder) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Text(
+                        category.label,
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    _CategorySection(
+                      menus: menus
+                          .where((menu) => menu.category == category)
+                          .toList(),
+                      emptyMessage: '${category.label} のメニューはまだありません',
+                    ),
+                  ],
+                ],
+              );
             },
           ),
         ),
@@ -118,15 +105,28 @@ class _MenuPageState extends State<MenuPage>
   }
 }
 
-class _MenuGrid extends StatelessWidget {
-  const _MenuGrid({required this.menus});
+class _CategorySection extends StatelessWidget {
+  const _CategorySection({required this.menus, required this.emptyMessage});
 
   final List<MenuItem> menus;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
+    if (menus.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: _EmptyState(
+          icon: Icons.search_off_outlined,
+          message: emptyMessage,
+        ),
+      );
+    }
+
     return GridView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,

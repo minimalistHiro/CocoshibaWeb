@@ -33,6 +33,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
   final UserProfileService _profileService = UserProfileService();
   late CalendarEvent _event;
   late final Stream<int> _reservationCountStream;
+  Stream<List<CalendarEvent>>? _relatedEventsStream;
+  late final PageController _imageController;
+  int _currentImageIndex = 0;
 
   bool _hasReservation = false;
   bool _isReservationLoading = true;
@@ -43,16 +46,26 @@ class _EventDetailPageState extends State<EventDetailPage> {
   void initState() {
     super.initState();
     _event = widget.event;
+    _imageController = PageController();
     final reservationEnabled =
         widget.showReservationActions && !widget.isExistingEvent;
     _reservationCountStream = reservationEnabled
         ? _eventService.watchEventReservationCount(_event.id)
         : Stream.value(0);
+    if (widget.isExistingEvent) {
+      _relatedEventsStream = _createRelatedEventsStream();
+    }
     if (reservationEnabled) {
       _loadReservationStatus();
     } else {
       _isReservationLoading = false;
     }
+  }
+
+  @override
+  void dispose() {
+    _imageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadReservationStatus() async {
@@ -87,6 +100,13 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final capacity = _event.capacity;
     if (capacity <= 0) return false;
     return reservationCount >= capacity;
+  }
+
+  Stream<List<CalendarEvent>> _createRelatedEventsStream() {
+    if (Firebase.apps.isEmpty) {
+      return Stream.value(const <CalendarEvent>[]);
+    }
+    return _eventService.watchEventsByExistingEventId(_event.id);
   }
 
   Future<void> _onReservationButtonPressed() async {
@@ -306,65 +326,19 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (event.imageUrls.isNotEmpty)
-                          AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: CocoshibaNetworkImage(
-                              url: event.imageUrls.first,
-                              fit: BoxFit.cover,
-                              placeholder: Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  Icons.event,
-                                  color: Colors.grey.shade500,
-                                  size: 48,
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          Container(
-                            height: 220,
-                            width: double.infinity,
-                            color: Colors.grey.shade200,
-                            alignment: Alignment.center,
-                            child: Icon(
-                              Icons.event,
-                              color: Colors.grey.shade500,
-                              size: 48,
-                            ),
-                          ),
+                        _EventImageCarousel(
+                          imageUrls: event.imageUrls,
+                          controller: _imageController,
+                          currentIndex: _currentImageIndex,
+                          onPageChanged: (index) {
+                            setState(() => _currentImageIndex = index);
+                          },
+                        ),
                         Padding(
                           padding: const EdgeInsets.all(24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    margin: const EdgeInsets.only(top: 6),
-                                    decoration: BoxDecoration(
-                                      color: event.color,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      event.name,
-                                      style: theme.textTheme.headlineSmall
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
                               _InfoRow(
                                 label: '主催',
                                 value: event.organizer.trim().isNotEmpty
@@ -413,6 +387,19 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                     : '記載なし',
                                 style: theme.textTheme.bodyMedium,
                               ),
+                              if (widget.isExistingEvent) ...[
+                                const SizedBox(height: 24),
+                                Text(
+                                  'イベント一覧',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _ExistingEventsList(
+                                  eventsStream: _relatedEventsStream,
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -507,6 +494,226 @@ class _EventDetailPageState extends State<EventDetailPage> {
   String _weekdayLabel(int weekday) {
     const labels = ['月', '火', '水', '木', '金', '土', '日'];
     return labels[(weekday + 6) % 7];
+  }
+}
+
+class _EventImageCarousel extends StatelessWidget {
+  const _EventImageCarousel({
+    required this.imageUrls,
+    required this.controller,
+    required this.currentIndex,
+    required this.onPageChanged,
+  });
+
+  final List<String> imageUrls;
+  final PageController controller;
+  final int currentIndex;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = Container(
+      color: Colors.grey.shade200,
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.event,
+        color: Colors.grey.shade500,
+        size: 48,
+      ),
+    );
+
+    if (imageUrls.isEmpty) {
+      return AspectRatio(
+        aspectRatio: 1,
+        child: placeholder,
+      );
+    }
+
+    final safeIndex = currentIndex.clamp(0, imageUrls.length - 1);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(
+          aspectRatio: 1,
+          child: PageView.builder(
+            controller: controller,
+            itemCount: imageUrls.length,
+            onPageChanged: onPageChanged,
+            itemBuilder: (context, index) {
+              return CocoshibaNetworkImage(
+                url: imageUrls[index],
+                fit: BoxFit.cover,
+                placeholder: placeholder,
+              );
+            },
+          ),
+        ),
+        if (imageUrls.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                imageUrls.length,
+                (index) => Container(
+                  width: 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: index == safeIndex
+                        ? Colors.black87
+                        : Colors.black26,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ExistingEventsList extends StatelessWidget {
+  const _ExistingEventsList({
+    required this.eventsStream,
+  });
+
+  final Stream<List<CalendarEvent>>? eventsStream;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final stream = eventsStream;
+    if (stream == null) {
+      return const _InlineMessage(message: 'イベント情報を取得できません。');
+    }
+
+    return StreamBuilder<List<CalendarEvent>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const SizedBox(
+            height: 48,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return const _InlineMessage(message: '既存イベントの取得に失敗しました。');
+        }
+
+        final events = snapshot.data ?? const <CalendarEvent>[];
+        final now = DateTime.now();
+        final visibleEvents = events
+            .where((event) => !event.endDateTime.isBefore(now))
+            .toList()
+          ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+        if (visibleEvents.isEmpty) {
+          return const _InlineMessage(message: '開催予定のイベントはありません');
+        }
+
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: visibleEvents.length,
+          separatorBuilder: (_, __) => const Divider(height: 16),
+          itemBuilder: (context, index) {
+            final event = visibleEvents[index];
+            return InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => EventDetailPage(event: event),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatEventDate(event.startDateTime),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              event.name,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatEventTime(event),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Align(
+                        alignment: Alignment.center,
+                        child:
+                            Icon(Icons.chevron_right, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatEventDate(DateTime date) {
+    return '${date.year}年${date.month}月${date.day}日（${_weekdayLabel(date.weekday)}）';
+  }
+
+  String _formatEventTime(CalendarEvent event) {
+    if (event.isClosedDay) return '終日';
+    return '${_hhmm(event.startDateTime)}〜${_hhmm(event.endDateTime)}';
+  }
+
+  String _hhmm(DateTime t) {
+    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _weekdayLabel(int weekday) {
+    const labels = ['月', '火', '水', '木', '金', '土', '日'];
+    return labels[(weekday + 6) % 7];
+  }
+}
+
+class _InlineMessage extends StatelessWidget {
+  const _InlineMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: Theme.of(context)
+          .textTheme
+          .bodyMedium
+          ?.copyWith(color: Colors.grey.shade700),
+    );
   }
 }
 

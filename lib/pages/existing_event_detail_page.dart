@@ -12,7 +12,7 @@ class ExistingEventDetailPage extends StatelessWidget {
     return EventDetailPage(
       event: event,
       isExistingEvent: true,
-      title: '既存イベント詳細',
+      title: event.name,
       showReservationActions: false,
       showScheduleInfo: false,
     );

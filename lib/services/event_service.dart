@@ -88,6 +88,24 @@ class EventService {
         );
   }
 
+  Stream<List<CalendarEvent>> watchEventsByExistingEventId(
+    String existingEventId, {
+    bool descending = false,
+  }) {
+    if (existingEventId.trim().isEmpty) {
+      return Stream.value(const <CalendarEvent>[]);
+    }
+    return _eventsRef
+        .where('existingEventId', isEqualTo: existingEventId)
+        .orderBy('startDateTime', descending: descending)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(CalendarEvent.fromDocument)
+              .toList(growable: false),
+        );
+  }
+
   Stream<List<CalendarEvent>> watchAllExistingEvents({bool descending = true}) {
     DateTime parseDate(dynamic value) {
       if (value is Timestamp) return value.toDate();
