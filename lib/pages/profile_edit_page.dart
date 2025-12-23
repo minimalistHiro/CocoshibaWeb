@@ -1,5 +1,7 @@
 import 'package:cocoshibaweb/app.dart';
+import 'package:cocoshibaweb/models/local_image.dart';
 import 'package:cocoshibaweb/services/user_profile_service.dart';
+import 'package:cocoshibaweb/utils/platform_image_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -13,16 +15,21 @@ class ProfileEditPage extends StatefulWidget {
 class _ProfileEditPageState extends State<ProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _photoUrlController = TextEditingController();
   final _bioController = TextEditingController();
   final UserProfileService _profileService = UserProfileService();
+  final PlatformImagePicker _imagePicker = createPlatformImagePicker();
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isPickingImage = false;
   String? _loadError;
   String? _selectedAgeGroup;
   String? _selectedArea;
+  String? _selectedGender;
   bool _didLoad = false;
+  bool _removePhoto = false;
+  LocalImage? _selectedImage;
+  String? _currentPhotoUrl;
 
   final _ageGroups = const [
     '10代以下',
@@ -42,6 +49,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     '県外',
   ];
 
+  final _genders = const [
+    '男性',
+    '女性',
+    '未回答',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +71,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _photoUrlController.dispose();
     _bioController.dispose();
     super.dispose();
   }
@@ -95,6 +107,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       final bio = ((profile?['bio'] as String?) ?? '').trim();
       final ageGroup = (profile?['ageGroup'] as String?)?.trim();
       final area = (profile?['area'] as String?)?.trim();
+      final gender = (profile?['gender'] as String?)?.trim();
       final photoUrl =
           ((profile?['photoUrl'] as String?) ?? user.photoUrl ?? '').trim();
 
@@ -102,10 +115,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
       _nameController.text = name;
       _bioController.text = bio;
-      _photoUrlController.text = photoUrl;
       setState(() {
         _selectedAgeGroup = ageGroup;
         _selectedArea = area;
+        _selectedGender = gender?.isNotEmpty == true ? gender : '未回答';
+        _currentPhotoUrl = photoUrl.isEmpty ? null : photoUrl;
+        _selectedImage = null;
+        _removePhoto = false;
       });
     } catch (_) {
       if (!mounted) return;
@@ -124,9 +140,32 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   }
 
   ImageProvider? _avatarImage() {
-    final url = _photoUrlController.text.trim();
+    if (_selectedImage != null) {
+      return MemoryImage(_selectedImage!.bytes);
+    }
+    final url = (_currentPhotoUrl ?? '').trim();
     if (url.isEmpty) return null;
     return NetworkImage(url);
+  }
+
+  Future<void> _pickImage() async {
+    if (_isSaving || _isPickingImage) return;
+    setState(() => _isPickingImage = true);
+    try {
+      final picked = await _imagePicker.pickMultiImage();
+      if (!mounted || picked.isEmpty) return;
+      setState(() {
+        _selectedImage = picked.first;
+        _removePhoto = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('画像の選択に失敗しました: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isPickingImage = false);
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -149,25 +188,50 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       );
       return;
     }
+    if (_selectedGender == null || _selectedGender!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('性別を選択してください')),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
       final name = _nameController.text.trim();
       final bio = _bioController.text.trim();
-      final photoUrl = _photoUrlController.text.trim();
+      String? photoUrl;
+
+      if (_selectedImage != null) {
+        photoUrl = await _profileService.uploadProfileImage(
+          user.uid,
+          _selectedImage!,
+        );
+      } else if (_removePhoto) {
+        photoUrl = '';
+      } else {
+        photoUrl = _currentPhotoUrl;
+      }
 
       await _profileService.upsertProfile(
         user.uid,
         name: name,
         ageGroup: _selectedAgeGroup!,
         area: _selectedArea!,
+        gender: _selectedGender!,
         bio: bio,
-        photoUrl: photoUrl.isEmpty ? null : photoUrl,
+        photoUrl: (photoUrl ?? '').trim().isEmpty ? null : photoUrl,
       );
+
+      String? authPhotoUrl;
+      if (_removePhoto) {
+        authPhotoUrl = '';
+      } else if (_selectedImage != null) {
+        authPhotoUrl = photoUrl;
+      }
 
       await auth.updateUserProfile(
         displayName: name,
-        photoUrl: photoUrl,
+        photoUrl: authPhotoUrl,
       );
 
       if (!mounted) return;
@@ -230,164 +294,209 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'プロフィール編集',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'プロフィール編集',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Builder(
+                      builder: (context) {
+                        final avatarImage = _avatarImage();
+                        return CircleAvatar(
+                          radius: 40,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundImage: avatarImage,
+                          onForegroundImageError:
+                              avatarImage == null ? null : (_, __) {},
+                          child: avatarImage == null
+                              ? Text(
+                                  _initialLetter(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                )
+                              : null,
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'プロフィール画像',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Builder(
-                        builder: (context) {
-                          final avatarImage = _avatarImage();
-                          return CircleAvatar(
-                        radius: 40,
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundImage: avatarImage,
-                        onForegroundImageError:
-                            avatarImage == null ? null : (_, __) {},
-                        child: avatarImage == null
-                            ? Text(
-                                _initialLetter(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              )
-                            : null,
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _photoUrlController,
-                          decoration: const InputDecoration(
-                            labelText: 'アイコン画像URL（任意）',
-                            border: OutlineInputBorder(),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: (_isSaving || _isPickingImage)
+                                ? null
+                                : _pickImage,
+                            icon: _isPickingImage
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.upload),
+                            label: const Text('画像をアップロード'),
                           ),
-                          onChanged: (_) => setState(() {}),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: (_isSaving ||
+                                    _isPickingImage ||
+                                    (_selectedImage == null &&
+                                        (_currentPhotoUrl ?? '').isEmpty))
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _selectedImage = null;
+                                      _currentPhotoUrl = null;
+                                      _removePhoto = true;
+                                    });
+                                  },
+                            child: const Text('画像を削除'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: '名前',
+                    border: OutlineInputBorder(),
+                  ),
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => setState(() {}),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return '名前を入力してください';
+                    }
+                    if (value.trim().length > 40) {
+                      return '40文字以内で入力してください';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                DropdownButtonFormField<String>(
+                  value: _selectedGender,
+                  decoration: const InputDecoration(
+                    labelText: '性別',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _genders
+                      .map(
+                        (gender) => DropdownMenuItem<String>(
+                          value: gender,
+                          child: Text(gender),
                         ),
-                      ),
-                    ],
+                      )
+                      .toList(),
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _selectedGender = value),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '性別を選択してください';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                DropdownButtonFormField<String>(
+                  value: _selectedAgeGroup,
+                  decoration: const InputDecoration(
+                    labelText: '年代',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: '名前',
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.next,
-                    onChanged: (_) => setState(() {}),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return '名前を入力してください';
-                      }
-                      if (value.trim().length > 40) {
-                        return '40文字以内で入力してください';
-                      }
-                      return null;
-                    },
+                  items: _ageGroups
+                      .map(
+                        (age) => DropdownMenuItem<String>(
+                          value: age,
+                          child: Text(age),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _selectedAgeGroup = value),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '年代を選択してください';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                DropdownButtonFormField<String>(
+                  value: _selectedArea,
+                  decoration: const InputDecoration(
+                    labelText: '住所',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 24),
-                  DropdownButtonFormField<String>(
-                    value: _selectedAgeGroup,
-                    decoration: const InputDecoration(
-                      labelText: '年代',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _ageGroups
-                        .map(
-                          (age) => DropdownMenuItem<String>(
-                            value: age,
-                            child: Text(age),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: _isSaving
-                        ? null
-                        : (value) => setState(() => _selectedAgeGroup = value),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '年代を選択してください';
-                      }
-                      return null;
-                    },
+                  items: _areas
+                      .map(
+                        (area) => DropdownMenuItem<String>(
+                          value: area,
+                          child: Text(area),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _selectedArea = value),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '住所を選択してください';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _bioController,
+                  minLines: 5,
+                  maxLines: 8,
+                  maxLength: 200,
+                  decoration: const InputDecoration(
+                    labelText: '自己紹介',
+                    alignLabelWithHint: true,
+                    hintText: '趣味や好きなことを書いてみましょう',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 24),
-                  DropdownButtonFormField<String>(
-                    value: _selectedArea,
-                    decoration: const InputDecoration(
-                      labelText: '住所',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _areas
-                        .map(
-                          (area) => DropdownMenuItem<String>(
-                            value: area,
-                            child: Text(area),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: _isSaving
-                        ? null
-                        : (value) => setState(() => _selectedArea = value),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '住所を選択してください';
-                      }
-                      return null;
-                    },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isSaving ? null : _saveProfile,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save),
+                    label: const Text('保存する'),
                   ),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _bioController,
-                    minLines: 5,
-                    maxLines: 8,
-                    maxLength: 200,
-                    decoration: const InputDecoration(
-                      labelText: '自己紹介',
-                      alignLabelWithHint: true,
-                      hintText: '趣味や好きなことを書いてみましょう',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _isSaving ? null : _saveProfile,
-                      icon: _isSaving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.save),
-                      label: const Text('保存する'),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

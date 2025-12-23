@@ -14,7 +14,10 @@ class _WebImagePicker implements PlatformImagePicker {
       ..multiple = true;
 
     input.click();
-    await input.onChange.first;
+    await Future.any([
+      input.onChange.first,
+      html.window.onFocus.first,
+    ]);
 
     final files = input.files;
     if (files == null || files.isEmpty) return const <LocalImage>[];
