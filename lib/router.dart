@@ -12,6 +12,7 @@ import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
 import 'package:cocoshibaweb/pages/login_page.dart';
 import 'package:cocoshibaweb/pages/menu_page.dart';
+import 'package:cocoshibaweb/pages/email_verification_page.dart';
 import 'package:cocoshibaweb/pages/password_reset_page.dart';
 import 'package:cocoshibaweb/pages/password_reset_sent_page.dart';
 import 'package:cocoshibaweb/pages/profile_edit_page.dart';
@@ -37,6 +38,7 @@ class CocoshibaPaths {
 
   static const login = '/_/login';
   static const signup = '/_/signup';
+  static const signupVerify = '/_/signup/verify';
   static const passwordReset = '/_/password-reset';
   static const passwordResetSent = '/_/password-reset/sent';
   static const profileEdit = '/_/profile/edit';
@@ -71,11 +73,19 @@ class CocoshibaRouter {
           initialLocation: CocoshibaPaths.home,
           refreshListenable: authRefreshNotifier,
           redirect: (context, state) {
-            final isLoggedIn = auth.currentUser != null;
+            final user = auth.currentUser;
+            final isLoggedIn = user != null;
+            final isEmailVerified = user?.emailVerified ?? true;
             final path = state.matchedLocation;
 
             final isAuthPage =
                 path == CocoshibaPaths.login || path == CocoshibaPaths.signup;
+            final isVerificationPage = path == CocoshibaPaths.signupVerify;
+
+            if (isLoggedIn && !isEmailVerified && !isVerificationPage) {
+              final from = Uri.encodeComponent(state.uri.toString());
+              return '${CocoshibaPaths.signupVerify}?from=$from';
+            }
 
             if (isLoggedIn && isAuthPage) {
               final rawFrom = state.uri.queryParameters['from'];
@@ -143,6 +153,13 @@ class CocoshibaRouter {
                 GoRoute(
                   path: CocoshibaPaths.signup,
                   builder: (context, state) => SignupPage(
+                    from: state.uri.queryParameters['from'],
+                  ),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.signupVerify,
+                  builder: (context, state) => EmailVerificationPage(
+                    email: state.uri.queryParameters['email'],
                     from: state.uri.queryParameters['from'],
                   ),
                 ),

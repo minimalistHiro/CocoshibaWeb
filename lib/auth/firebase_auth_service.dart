@@ -82,6 +82,22 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<void> sendEmailVerification({String? continueUrl}) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('User is not available for email verification.');
+    }
+    await user.sendEmailVerification();
+  }
+
+  @override
+  Future<void> reloadCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await user.reload();
+  }
+
+  @override
   Future<void> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -144,6 +160,7 @@ class FirebaseAuthService implements AuthService {
     return AuthUser(
       uid: user.uid,
       email: user.email,
+      emailVerified: user.emailVerified,
       displayName: user.displayName,
       photoUrl: user.photoURL,
     );

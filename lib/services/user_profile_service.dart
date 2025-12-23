@@ -23,6 +23,66 @@ class UserProfileService {
     return _profileRef(uid).snapshots().map((snapshot) => snapshot.data());
   }
 
+  Future<void> ensureInitialProfile(
+    String uid, {
+    required bool emailVerified,
+    required String signUpPlatform,
+  }) async {
+    final ref = _profileRef(uid);
+    final snapshot = await ref.get();
+    final data = snapshot.data() ?? <String, dynamic>{};
+
+    final updates = <String, dynamic>{};
+    if (!data.containsKey('createdAt')) {
+      updates['createdAt'] = FieldValue.serverTimestamp();
+    }
+    if (!data.containsKey('emailVerified')) {
+      updates['emailVerified'] = emailVerified;
+    }
+    if (!data.containsKey('emailVerifiedAt')) {
+      updates['emailVerifiedAt'] =
+          emailVerified ? FieldValue.serverTimestamp() : null;
+    }
+    if (!data.containsKey('isOwner')) {
+      updates['isOwner'] = false;
+    }
+    if (!data.containsKey('isSubOwner')) {
+      updates['isSubOwner'] = false;
+    }
+    if (!data.containsKey('point')) {
+      updates['point'] = 0;
+    }
+    if (!data.containsKey('newUserCouponUsed')) {
+      updates['newUserCouponUsed'] = false;
+    }
+    if (!data.containsKey('signUpPlatform')) {
+      updates['signUpPlatform'] = signUpPlatform;
+    }
+
+    if (updates.isEmpty) return;
+
+    updates['updatedAt'] = FieldValue.serverTimestamp();
+    await ref.set(
+      updates,
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<void> updateEmailVerificationStatus(
+    String uid, {
+    required bool emailVerified,
+  }) async {
+    await _profileRef(uid).set(
+      {
+        'emailVerified': emailVerified,
+        'emailVerifiedAt':
+            emailVerified ? FieldValue.serverTimestamp() : null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> upsertProfile(
     String uid, {
     required String name,

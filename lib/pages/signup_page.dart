@@ -1,5 +1,6 @@
 import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/router.dart';
+import 'package:cocoshibaweb/services/user_profile_service.dart';
 import 'package:cocoshibaweb/widgets/google_sign_in_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,7 @@ class _SignupPageState extends State<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
+  final UserProfileService _profileService = UserProfileService();
 
   bool _isBusy = false;
   bool _isPasswordVisible = false;
@@ -178,14 +180,23 @@ class _SignupPageState extends State<SignupPage> {
                                     email: _emailController.text.trim(),
                                     password: _passwordController.text,
                                   );
+                                  final user = auth.currentUser;
+                                  if (user != null) {
+                                    await _profileService.ensureInitialProfile(
+                                      user.uid,
+                                      emailVerified: user.emailVerified,
+                                      signUpPlatform: 'web',
+                                    );
+                                  }
+                                  await auth.sendEmailVerification();
                                   if (!context.mounted) return;
+                                  final email = _emailController.text.trim();
                                   final from = widget.from;
-                                  final suffix =
-                                      from == null || from.isEmpty
-                                          ? ''
-                                          : '?from=$from';
+                                  final suffix = from == null || from.isEmpty
+                                      ? ''
+                                      : '&from=$from';
                                   context.go(
-                                    '${CocoshibaPaths.accountInfoRegister}$suffix',
+                                    '${CocoshibaPaths.signupVerify}?email=$email$suffix',
                                   );
                                 } catch (e) {
                                   if (!context.mounted) return;

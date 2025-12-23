@@ -19,6 +19,10 @@ abstract class AuthService {
     required String password,
   });
 
+  Future<void> sendEmailVerification({String? continueUrl});
+
+  Future<void> reloadCurrentUser();
+
   Future<void> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -45,12 +49,14 @@ class AuthUser {
   const AuthUser({
     required this.uid,
     required this.email,
+    required this.emailVerified,
     this.displayName,
     this.photoUrl,
   });
 
   final String uid;
   final String? email;
+  final bool emailVerified;
   final String? displayName;
   final String? photoUrl;
 }

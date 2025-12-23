@@ -18,7 +18,11 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<void> signInWithGoogle() async {
-    _currentUser = const AuthUser(uid: 'google_uid', email: 'google@example.com');
+    _currentUser = const AuthUser(
+      uid: 'google_uid',
+      email: 'google@example.com',
+      emailVerified: true,
+    );
     _controller.add(_currentUser);
   }
 
@@ -31,6 +35,7 @@ class FakeAuthService implements AuthService {
     _currentUser = AuthUser(
       uid: _currentUser!.uid,
       email: _currentUser!.email,
+      emailVerified: _currentUser!.emailVerified,
       displayName: displayName ?? _currentUser!.displayName,
       photoUrl: photoUrl ?? _currentUser!.photoUrl,
     );
@@ -48,7 +53,11 @@ class FakeAuthService implements AuthService {
     required String email,
     required String password,
   }) async {
-    _currentUser = AuthUser(uid: 'uid', email: email);
+    _currentUser = AuthUser(
+      uid: 'uid',
+      email: email,
+      emailVerified: false,
+    );
     _controller.add(_currentUser);
   }
 
@@ -57,9 +66,19 @@ class FakeAuthService implements AuthService {
     required String email,
     required String password,
   }) async {
-    _currentUser = AuthUser(uid: 'uid', email: email);
+    _currentUser = AuthUser(
+      uid: 'uid',
+      email: email,
+      emailVerified: false,
+    );
     _controller.add(_currentUser);
   }
+
+  @override
+  Future<void> sendEmailVerification({String? continueUrl}) async {}
+
+  @override
+  Future<void> reloadCurrentUser() async {}
 
   @override
   Future<void> signOut() async {
@@ -68,7 +87,19 @@ class FakeAuthService implements AuthService {
   }
 
   @override
-  Future<void> sendPasswordResetEmail({required String email}) async {}
+  Future<void> sendPasswordResetEmail({
+    required String email,
+    String? continueUrl,
+  }) async {}
+
+  @override
+  Future<String> verifyPasswordResetCode({required String code}) async => code;
+
+  @override
+  Future<void> confirmPasswordReset({
+    required String code,
+    required String newPassword,
+  }) async {}
 
   @override
   Future<void> deleteAccount({String? passwordForReauth}) async {
