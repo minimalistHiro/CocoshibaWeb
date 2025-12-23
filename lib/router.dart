@@ -5,6 +5,7 @@ import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/book_order_page.dart';
 import 'package:cocoshibaweb/pages/data_privacy_page.dart';
 import 'package:cocoshibaweb/pages/faq_page.dart';
+import 'package:cocoshibaweb/pages/account_info_register_page.dart';
 import 'package:cocoshibaweb/pages/event_create_page.dart';
 import 'package:cocoshibaweb/pages/events_page.dart';
 import 'package:cocoshibaweb/pages/home_page.dart';
@@ -40,6 +41,7 @@ class CocoshibaPaths {
   static const passwordResetSent = '/_/password-reset/sent';
   static const profileEdit = '/_/profile/edit';
   static const loginInfoUpdate = '/_/login-info';
+  static const accountInfoRegister = '/_/account-info';
   static const dataPrivacy = '/_/data-privacy';
   static const supportHelp = '/_/support';
   static const faq = '/_/faq';
@@ -160,6 +162,12 @@ class CocoshibaRouter {
                 GoRoute(
                   path: CocoshibaPaths.profileEdit,
                   builder: (context, state) => const ProfileEditPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.accountInfoRegister,
+                  builder: (context, state) => AccountInfoRegisterPage(
+                    from: state.uri.queryParameters['from'],
+                  ),
                 ),
                 GoRoute(
                   path: CocoshibaPaths.loginInfoUpdate,

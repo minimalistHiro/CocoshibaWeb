@@ -67,11 +67,11 @@ class _SignupPageState extends State<SignupPage> {
                       await auth.signInWithGoogle();
                       if (!context.mounted) return;
                       final from = widget.from;
-                      if (from != null && from.isNotEmpty) {
-                        context.go(Uri.decodeComponent(from));
-                      } else {
-                        context.go(CocoshibaPaths.home);
-                      }
+                      final suffix =
+                          from == null || from.isEmpty ? '' : '?from=$from';
+                      context.go(
+                        '${CocoshibaPaths.accountInfoRegister}$suffix',
+                      );
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -180,11 +180,13 @@ class _SignupPageState extends State<SignupPage> {
                                   );
                                   if (!context.mounted) return;
                                   final from = widget.from;
-                                  if (from != null && from.isNotEmpty) {
-                                    context.go(Uri.decodeComponent(from));
-                                  } else {
-                                    context.go(CocoshibaPaths.home);
-                                  }
+                                  final suffix =
+                                      from == null || from.isEmpty
+                                          ? ''
+                                          : '?from=$from';
+                                  context.go(
+                                    '${CocoshibaPaths.accountInfoRegister}$suffix',
+                                  );
                                 } catch (e) {
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(

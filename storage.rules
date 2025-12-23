@@ -22,6 +22,11 @@ service firebase.storage {
       allow read: if true;
       allow write, delete: if isOwner();
     }
+
+    // Profile images: allow the signed-in user to manage their own folder.
+    match /profile_images/{userId}/{fileName} {
+      allow read: if true;
+      allow write, delete: if isSignedIn() && request.auth.uid == userId;
+    }
   }
 }
-
