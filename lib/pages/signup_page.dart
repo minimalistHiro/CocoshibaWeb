@@ -2,6 +2,7 @@ import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/router.dart';
 import 'package:cocoshibaweb/services/user_profile_service.dart';
 import 'package:cocoshibaweb/widgets/google_sign_in_button.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,12 +25,24 @@ class _SignupPageState extends State<SignupPage> {
   bool _isBusy = false;
   bool _isPasswordVisible = false;
   bool _isPasswordConfirmVisible = false;
+  bool _hasAgreed = false;
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer();
+    _privacyRecognizer = TapGestureRecognizer();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -166,11 +179,52 @@ class _SignupPageState extends State<SignupPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: _hasAgreed,
+                      onChanged: _isBusy
+                          ? null
+                          : (value) =>
+                              setState(() => _hasAgreed = value ?? false),
+                      title: Text.rich(
+                        TextSpan(
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(
+                              text: '利用規約',
+                              style: const TextStyle(
+                                decoration: TextDecoration.underline,
+                                color: Colors.blue,
+                              ),
+                              recognizer: _termsRecognizer
+                                ..onTap = () {
+                                  context.go(CocoshibaPaths.terms);
+                                },
+                            ),
+                            const TextSpan(text: 'と'),
+                            TextSpan(
+                              text: 'プライバシーポリシー',
+                              style: const TextStyle(
+                                decoration: TextDecoration.underline,
+                                color: Colors.blue,
+                              ),
+                              recognizer: _privacyRecognizer
+                                ..onTap = () {
+                                  context.go(CocoshibaPaths.privacyPolicy);
+                                },
+                            ),
+                            const TextSpan(text: 'に同意します'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: FilledButton(
-                        onPressed: _isBusy
+                        onPressed: _isBusy || !_hasAgreed
                             ? null
                             : () async {
                                 if (!_formKey.currentState!.validate()) return;
