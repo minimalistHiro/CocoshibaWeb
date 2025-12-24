@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cocoshibaweb/widgets/store_info_card.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
+import 'package:cocoshibaweb/router.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -362,7 +364,7 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 940;
-        final collageHeight = isWide
+        final targetCollageHeight = isWide
             ? (constraints.maxHeight * 0.62).clamp(320.0, 520.0)
             : (constraints.maxWidth * 0.7).clamp(260.0, 460.0);
         final collageWidth = isWide
@@ -371,42 +373,93 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
         final sectionPadding = isWide
             ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
             : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+        final reservedBottomPadding = isWide ? 88.0 : 0.0;
+        final safetyMargin = isWide ? 36.0 : 0.0;
+        final contentHeight =
+            (constraints.maxHeight - sectionPadding.vertical)
+                .clamp(0.0, double.infinity);
+        final usableHeight = (contentHeight -
+                reservedBottomPadding -
+                safetyMargin)
+            .clamp(0.0, double.infinity);
+        final textBlockMaxWidth =
+            isWide ? constraints.maxWidth * 0.7 : constraints.maxWidth;
+        final textBlockHeight = _EventBodyText.estimateHeight(
+          context: context,
+          section: widget.section,
+          maxWidth: textBlockMaxWidth,
+          scaleWithWidth: !isWide,
+          availableWidth: constraints.maxWidth,
+        );
+        final maxCollageHeight = (usableHeight - textBlockHeight)
+            .clamp(0.0, double.infinity);
+        const minCollageHeight = 240.0;
+        var collageHeight = min(targetCollageHeight, maxCollageHeight);
+        final needsScroll =
+            textBlockHeight + minCollageHeight > usableHeight;
 
         final textBlock = _EventBodyText(
           section: widget.section,
           textColor: textColor,
-          maxWidth: isWide ? constraints.maxWidth * 0.7 : constraints.maxWidth,
+          maxWidth: textBlockMaxWidth,
           scaleWithWidth: !isWide,
+          expandToMaxWidth: !isWide,
+        );
+
+        final desiredLift =
+            min(48.0, (usableHeight - textBlockHeight) * 0.15)
+                .clamp(16.0, 48.0)
+                .toDouble();
+        final availableLift = max(
+          0.0,
+          usableHeight - (collageHeight + textBlockHeight),
+        );
+        final textLift = min(desiredLift, availableLift);
+        final totalHeight = collageHeight + textBlockHeight - textLift;
+        if (totalHeight > usableHeight) {
+          final overflow = totalHeight - usableHeight;
+          collageHeight = max(0.0, collageHeight - overflow);
+        }
+
+        final column = Column(
+          mainAxisAlignment:
+              needsScroll ? MainAxisAlignment.start : MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: collageWidth,
+                height: needsScroll
+                    ? min(targetCollageHeight, maxCollageHeight)
+                    : collageHeight,
+                child: _EventCollage(
+                  layout: _layout,
+                  isWide: isWide,
+                  title: widget.section.title,
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Transform.translate(
+                offset: Offset(0, -textLift),
+                child: textBlock,
+              ),
+            ),
+          ],
         );
 
         return SizedBox.expand(
           child: Padding(
-            padding: sectionPadding,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: collageWidth,
-                    height: collageHeight,
-                    child: _EventCollage(
-                      layout: _layout,
-                      isWide: isWide,
-                      title: widget.section.title,
-                    ),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Transform.translate(
-                    offset: const Offset(0, -70),
-                    child: textBlock,
-                  ),
-                ),
-              ],
+            padding: sectionPadding.copyWith(
+              bottom: sectionPadding.bottom + reservedBottomPadding,
             ),
+            child: needsScroll
+                ? SingleChildScrollView(
+                    child: column,
+                  )
+                : column,
           ),
         );
       },
@@ -624,12 +677,95 @@ class _EventBodyText extends StatelessWidget {
     required this.textColor,
     required this.maxWidth,
     this.scaleWithWidth = true,
+    this.expandToMaxWidth = false,
   });
+
+  static const double _viewMoreCompactWidth = 560;
 
   final _StorySection section;
   final Color textColor;
   final double? maxWidth;
   final bool scaleWithWidth;
+  final bool expandToMaxWidth;
+
+  static bool shouldShowViewMore(_StorySection section) =>
+      section.subtitle == 'ボードゲーム会やLIVE';
+
+  static double estimateHeight({
+    required BuildContext context,
+    required _StorySection section,
+    required double maxWidth,
+    required bool scaleWithWidth,
+    required double availableWidth,
+  }) {
+    if (maxWidth <= 0) {
+      return 0;
+    }
+    final theme = Theme.of(context);
+    const scaledSubtitles = [
+      'ふらっと立ち寄れる読書席',
+      'ボードゲーム会やLIVE',
+      'ハンドメイド・スローマーケット',
+    ];
+    final isScaledSection = scaledSubtitles.contains(section.subtitle);
+    final textScale = isScaledSection && scaleWithWidth
+        ? (maxWidth / 600).clamp(0.64, 1.0)
+        : 1.0;
+    final scaledMaxWidth =
+        isScaledSection ? maxWidth * textScale : maxWidth;
+    final subtitleStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.8,
+      fontSize: theme.textTheme.titleMedium?.fontSize != null
+          ? theme.textTheme.titleMedium!.fontSize! * textScale
+          : null,
+    );
+    final titleStyle = theme.textTheme.headlineSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      height: 1.3,
+      fontSize: theme.textTheme.headlineSmall?.fontSize != null
+          ? theme.textTheme.headlineSmall!.fontSize! * textScale
+          : null,
+    );
+    final bodyStyle = theme.textTheme.bodyLarge?.copyWith(
+      height: 1.8,
+      fontSize: theme.textTheme.bodyLarge?.fontSize != null
+          ? theme.textTheme.bodyLarge!.fontSize! * textScale
+          : null,
+    );
+
+    double measureTextHeight(String text, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: scaledMaxWidth);
+      return painter.height;
+    }
+
+    var height = 40.0;
+    height += measureTextHeight(section.subtitle, subtitleStyle);
+    height += 12;
+    height += measureTextHeight(section.title, titleStyle);
+    height += 12;
+    height += measureTextHeight(section.body, bodyStyle);
+
+    if (shouldShowViewMore(section)) {
+      final isCompactViewMore = availableWidth >= _viewMoreCompactWidth;
+      final viewMorePadding = isCompactViewMore ? 4.0 : 12.0;
+      final viewMoreGap = isCompactViewMore ? 6.0 : 8.0;
+      final underlineHeight = isCompactViewMore ? 8.0 : 12.0;
+      final preSpacing = isCompactViewMore ? 12.0 : 18.0;
+      final viewMoreStyle = theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 4,
+      );
+      final viewMoreHeight = measureTextHeight('VIEW MORE', viewMoreStyle);
+      height += preSpacing;
+      height += viewMorePadding + viewMoreHeight + viewMoreGap + underlineHeight;
+    }
+
+    return height;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -640,6 +776,7 @@ class _EventBodyText extends StatelessWidget {
       'ハンドメイド・スローマーケット',
     ];
     final isScaledSection = scaledSubtitles.contains(section.subtitle);
+    final showViewMore = shouldShowViewMore(section);
     final baseSubtitleStyle = theme.textTheme.titleMedium?.copyWith(
       color: textColor,
       fontWeight: FontWeight.w600,
@@ -652,6 +789,7 @@ class _EventBodyText extends StatelessWidget {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         final baseMaxWidth = maxWidth ?? availableWidth;
+        final isCompactViewMore = availableWidth >= _viewMoreCompactWidth;
         final textScale = isScaledSection && scaleWithWidth
             ? (availableWidth / 600).clamp(0.64, 1.0)
             : 1.0;
@@ -667,55 +805,145 @@ class _EventBodyText extends StatelessWidget {
           height: 1.8,
         );
 
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: scaledMaxWidth),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    section.subtitle,
-                    textAlign: TextAlign.left,
-                    style: baseSubtitleStyle?.copyWith(
-                      fontSize: baseSubtitleStyle.fontSize != null
-                          ? baseSubtitleStyle.fontSize! * textScale
-                          : null,
-                    ),
+        final card = DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  section.subtitle,
+                  textAlign: TextAlign.left,
+                  style: baseSubtitleStyle?.copyWith(
+                    fontSize: baseSubtitleStyle.fontSize != null
+                        ? baseSubtitleStyle.fontSize! * textScale
+                        : null,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    section.title,
-                    textAlign: TextAlign.left,
-                    style: titleStyle?.copyWith(
-                      fontSize: titleStyle.fontSize != null
-                          ? titleStyle.fontSize! * textScale
-                          : null,
-                    ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  section.title,
+                  textAlign: TextAlign.left,
+                  style: titleStyle?.copyWith(
+                    fontSize: titleStyle.fontSize != null
+                        ? titleStyle.fontSize! * textScale
+                        : null,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    section.body,
-                    textAlign: TextAlign.left,
-                    style: bodyStyle?.copyWith(
-                      fontSize: bodyStyle.fontSize != null
-                          ? bodyStyle.fontSize! * textScale
-                          : null,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  section.body,
+                  textAlign: TextAlign.left,
+                  style: bodyStyle?.copyWith(
+                    fontSize: bodyStyle.fontSize != null
+                        ? bodyStyle.fontSize! * textScale
+                        : null,
+                  ),
+                ),
+                if (showViewMore) ...[
+                  SizedBox(height: isCompactViewMore ? 12 : 18),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _ViewMoreButton(
+                      color: textColor,
+                      compact: isCompactViewMore,
+                      onTap: () => context.go(CocoshibaPaths.events),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
+          ),
+        );
+
+        final effectiveMaxWidth =
+            expandToMaxWidth ? availableWidth : scaledMaxWidth;
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: effectiveMaxWidth),
+          child: SizedBox(
+            width: expandToMaxWidth ? availableWidth : null,
+            child: card,
           ),
         );
       },
     );
   }
+}
+
+class _ViewMoreButton extends StatelessWidget {
+  const _ViewMoreButton({
+    required this.color,
+    this.compact = false,
+    required this.onTap,
+  });
+
+  final Color color;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.titleMedium?.copyWith(
+      color: color,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 4,
+    );
+
+    final textLineGap = compact ? 6.0 : 8.0;
+    final underlineHeight = compact ? 8.0 : 12.0;
+    final verticalPadding = compact ? 2.0 : 6.0;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding:
+              EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('VIEW MORE', style: textStyle),
+              SizedBox(height: textLineGap),
+              CustomPaint(
+                size: Size(180, underlineHeight),
+                painter: _ViewMoreLinePainter(color: color),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewMoreLinePainter extends CustomPainter {
+  const _ViewMoreLinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.square;
+    final endX = size.width - 14;
+    final baseY = size.height;
+    canvas.drawLine(Offset(0, baseY), Offset(endX, baseY), paint);
+    canvas.drawLine(Offset(endX, baseY), Offset(size.width, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ViewMoreLinePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _HandmadeCollage extends StatelessWidget {
