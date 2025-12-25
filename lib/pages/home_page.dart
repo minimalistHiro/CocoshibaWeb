@@ -4,7 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cocoshibaweb/app.dart';
+import 'package:cocoshibaweb/models/calendar_event.dart';
+import 'package:cocoshibaweb/services/event_service.dart';
+import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:cocoshibaweb/widgets/store_info_card.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cocoshibaweb/router.dart';
@@ -22,6 +26,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late final Animation<double> _introOpacity;
   late final Animation<double> _introScale;
   OverlayEntry? _introOverlay;
+  EventService? _eventService;
+  late Stream<List<CalendarEvent>> _recentEventsStream;
+  late bool _firebaseReady;
 
   final List<_StorySection> _sections = const [
     _StorySection(
@@ -74,6 +81,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    _firebaseReady = Firebase.apps.isNotEmpty;
+    _recentEventsStream = _createRecentEventsStream();
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2900),
@@ -165,6 +174,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _introOverlay = null;
   }
 
+  Stream<List<CalendarEvent>> _createRecentEventsStream() {
+    if (!_firebaseReady) {
+      return Stream.value(const <CalendarEvent>[]);
+    }
+    _eventService ??= EventService();
+    return _eventService!.watchUpcomingActiveEvents(limit: 30).map(
+          (events) => events.take(7).toList(growable: false),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScrollConfiguration(
@@ -206,7 +225,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 child: RepaintBoundary(
                   child: isStoreInfo
                       ? const _StoreInfoSectionView()
-                      : _StorySectionView(section: _sections[index]),
+                      : _StorySectionView(
+                          section: _sections[index],
+                          recentEventsStream: _recentEventsStream,
+                          firebaseReady: _firebaseReady,
+                        ),
                 ),
               );
             },
@@ -293,9 +316,15 @@ enum _StoryLayout {
 }
 
 class _StorySectionView extends StatelessWidget {
-  const _StorySectionView({required this.section});
+  const _StorySectionView({
+    required this.section,
+    required this.recentEventsStream,
+    required this.firebaseReady,
+  });
 
   final _StorySection section;
+  final Stream<List<CalendarEvent>> recentEventsStream;
+  final bool firebaseReady;
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +394,11 @@ class _StorySectionView extends StatelessWidget {
         }
 
         if (section.layout == _StoryLayout.eventHighlight) {
-          return _EventHighlightSectionView(section: section);
+          return _EventHighlightSectionView(
+            section: section,
+            recentEventsStream: recentEventsStream,
+            firebaseReady: firebaseReady,
+          );
         }
 
         if (section.layout == _StoryLayout.handmadeHighlight) {
@@ -460,9 +493,15 @@ class _StorySectionView extends StatelessWidget {
 }
 
 class _EventHighlightSectionView extends StatefulWidget {
-  const _EventHighlightSectionView({required this.section});
+  const _EventHighlightSectionView({
+    required this.section,
+    required this.recentEventsStream,
+    required this.firebaseReady,
+  });
 
   final _StorySection section;
+  final Stream<List<CalendarEvent>> recentEventsStream;
+  final bool firebaseReady;
 
   @override
   State<_EventHighlightSectionView> createState() =>
@@ -530,6 +569,8 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
           maxWidth: textBlockMaxWidth,
           scaleWithWidth: !isWide,
           expandToMaxWidth: !isWide,
+          recentEventsStream: widget.recentEventsStream,
+          firebaseReady: widget.firebaseReady,
         );
 
         final desiredLift =
@@ -804,18 +845,32 @@ class _EventBodyText extends StatelessWidget {
     required this.maxWidth,
     this.scaleWithWidth = true,
     this.expandToMaxWidth = false,
+    this.recentEventsStream,
+    this.firebaseReady = false,
   });
 
   static const double _viewMoreCompactWidth = 560;
+  static const double _recentEventCompactWidth = 640;
+  static const double _recentEventCardHeight = 188;
+  static const double _recentEventImageHeight = 118;
 
   final _StorySection section;
   final Color textColor;
   final double? maxWidth;
   final bool scaleWithWidth;
   final bool expandToMaxWidth;
+  final Stream<List<CalendarEvent>>? recentEventsStream;
+  final bool firebaseReady;
 
   static bool shouldShowViewMore(_StorySection section) =>
       section.subtitle == 'ボードゲーム会やLIVE';
+
+  static double _recentEventCardWidth(double availableWidth) {
+    if (availableWidth < _recentEventCompactWidth) {
+      return 168;
+    }
+    return 204;
+  }
 
   static double estimateHeight({
     required BuildContext context,
@@ -888,6 +943,15 @@ class _EventBodyText extends StatelessWidget {
       final viewMoreHeight = measureTextHeight('VIEW MORE', viewMoreStyle);
       height += preSpacing;
       height += viewMorePadding + viewMoreHeight + viewMoreGap + underlineHeight;
+      final headerStyle = theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.6,
+      );
+      final headerHeight = measureTextHeight('直近のイベント', headerStyle);
+      height += isCompactViewMore ? 18 : 22;
+      height += headerHeight;
+      height += 12;
+      height += _recentEventCardHeight;
     }
 
     return height;
@@ -980,6 +1044,14 @@ class _EventBodyText extends StatelessWidget {
                       onTap: () => context.go(CocoshibaPaths.events),
                     ),
                   ),
+                  SizedBox(height: isCompactViewMore ? 18 : 22),
+                  if (recentEventsStream != null)
+                    _RecentEventsSection(
+                      color: textColor,
+                      availableWidth: availableWidth,
+                      eventsStream: recentEventsStream!,
+                      firebaseReady: firebaseReady,
+                    ),
                 ],
               ],
             ),
@@ -999,6 +1071,216 @@ class _EventBodyText extends StatelessWidget {
       },
     );
   }
+}
+
+class _RecentEventsSection extends StatelessWidget {
+  const _RecentEventsSection({
+    required this.color,
+    required this.availableWidth,
+    required this.eventsStream,
+    required this.firebaseReady,
+  });
+
+  final Color color;
+  final double availableWidth;
+  final Stream<List<CalendarEvent>> eventsStream;
+  final bool firebaseReady;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cardWidth = _EventBodyText._recentEventCardWidth(availableWidth);
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      color: color,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.6,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('直近のイベント', style: titleStyle),
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: const BoxDecoration(color: Colors.white),
+          child: SizedBox(
+            height: _EventBodyText._recentEventCardHeight,
+            child: firebaseReady
+                ? StreamBuilder<List<CalendarEvent>>(
+                    stream: eventsStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState ==
+                              ConnectionState.waiting &&
+                          !snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'イベントの取得に失敗しました',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: color,
+                            ),
+                          ),
+                        );
+                      }
+                      final events = snapshot.data ?? const <CalendarEvent>[];
+                      if (events.isEmpty) {
+                        return Center(
+                          child: Text(
+                            '直近のイベントがありません',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: color,
+                            ),
+                          ),
+                        );
+                      }
+                      return ScrollConfiguration(
+                        behavior: const _StoryScrollBehavior(),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: events
+                                .map(
+                                  (event) => Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: _RecentEventCard(
+                                      event: event,
+                                      width: cardWidth,
+                                      color: color,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : Center(
+                    child: Text(
+                      'Firebase が初期化されていないため、イベント情報は表示できません。',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: color,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentEventCard extends StatelessWidget {
+  const _RecentEventCard({
+    required this.event,
+    required this.width,
+    required this.color,
+  });
+
+  final CalendarEvent event;
+  final double width;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateStyle = theme.textTheme.labelLarge?.copyWith(
+      color: color.withOpacity(0.7),
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.6,
+    );
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      color: color,
+      fontWeight: FontWeight.w700,
+      height: 1.3,
+    );
+    final hasImage = event.imageUrls.isNotEmpty;
+
+    Widget buildImage() {
+      final placeholder = Container(
+        color: Colors.grey.shade200,
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.image_not_supported_outlined,
+          size: 32,
+          color: Colors.black38,
+        ),
+      );
+
+      if (!hasImage) return placeholder;
+      if (kIsWeb) {
+        return Image.network(
+          event.imageUrls.first,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => placeholder,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return placeholder;
+          },
+        );
+      }
+      return CocoshibaNetworkImage(
+        url: event.imageUrls.first,
+        fit: BoxFit.cover,
+        placeholder: placeholder,
+      );
+    }
+
+    return SizedBox(
+      width: width,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: width,
+                height: _EventBodyText._recentEventImageHeight,
+                child: buildImage(),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_formatEventDate(event.startDateTime),
+                        style: dateStyle),
+                    const SizedBox(height: 6),
+                    Text(event.name, style: titleStyle),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatEventDate(DateTime date) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '$year.$month.$day';
 }
 
 class _ViewMoreButton extends StatelessWidget {

@@ -77,6 +77,28 @@ class EventService {
         );
   }
 
+  Stream<List<CalendarEvent>> watchUpcomingActiveEvents({int limit = 30}) {
+    final now = DateTime.now();
+    final startTimestamp = Timestamp.fromDate(
+      DateTime(now.year, now.month, now.day),
+    );
+
+    Query<Map<String, dynamic>> query = _eventsRef
+        .where('startDateTime', isGreaterThanOrEqualTo: startTimestamp)
+        .orderBy('startDateTime');
+
+    if (limit > 0) {
+      query = query.limit(limit);
+    }
+
+    return query.snapshots().map(
+          (snapshot) => snapshot.docs
+              .map(CalendarEvent.fromDocument)
+              .where((event) => !event.isClosedDay)
+              .toList(growable: false),
+        );
+  }
+
   Stream<List<CalendarEvent>> watchAllEvents({bool descending = true}) {
     return _eventsRef
         .orderBy('startDateTime', descending: descending)
