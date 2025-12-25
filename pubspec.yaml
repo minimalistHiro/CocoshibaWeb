@@ -83,6 +83,7 @@ flutter:
     - assets/images/IMG_1683.jpeg
     - assets/images/google_logo.png
     - assets/images/event_connecting_green.jpeg
+    - assets/images/ココシバロゴ_w.PNG
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

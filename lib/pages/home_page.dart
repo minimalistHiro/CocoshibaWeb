@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/widgets/store_info_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
@@ -15,8 +16,12 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   final ScrollController _controller = ScrollController();
+  late final AnimationController _introController;
+  late final Animation<double> _introOpacity;
+  late final Animation<double> _introScale;
+  OverlayEntry? _introOverlay;
 
   final List<_StorySection> _sections = const [
     _StorySection(
@@ -41,7 +46,7 @@ class _HomePageState extends State<HomePage> {
       title: 'イベントがつなぐ緑',
       subtitle: 'ボードゲーム会やLIVE',
       body:
-          '人と人が交わる夜。\n'
+          '人と人が交わる時間。\n'
           '小さな挑戦を後押しするイベントを開催しています。',
       imageAsset: 'assets/images/event_connecting_green.jpeg',
       layout: _StoryLayout.eventHighlight,
@@ -56,10 +61,10 @@ class _HomePageState extends State<HomePage> {
       layout: _StoryLayout.handmadeHighlight,
     ),
     _StorySection(
-      title: 'アートとやさしい時間',
-      subtitle: '音・言葉・表現',
+      title: '本 × イベント × カフェ',
+      subtitle: '日常に彩りを添える場所',
       body:
-          'アーティストの表現が、日常に彩りを添えます。\n'
+          '人々の交流が日常に彩りを添えます。\n'
           '気軽に立ち寄れる文化の場所。',
       imageAsset: 'assets/images/IMG_1385.jpeg',
       hasImageRadius: false,
@@ -69,10 +74,56 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      for (final section in _sections) {
-      precacheImage(AssetImage(section.imageAsset), context);
+    _introController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2900),
+    );
+    _introOpacity = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 300,
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: 2000,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 600,
+      ),
+    ]).animate(_introController);
+    _introScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.96, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 300,
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: 1000,
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween(1.0),
+        weight: 600,
+      ),
+    ]).animate(_introController);
+    _introController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _removeIntroOverlay();
       }
+    });
+    _introController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showIntroOverlay();
+      for (final section in _sections) {
+        precacheImage(AssetImage(section.imageAsset), context);
+      }
+      precacheImage(
+        const AssetImage('assets/images/ココシバロゴ_w.PNG'),
+        context,
+      );
       precacheImage(const AssetImage('assets/images/IMG_1385.jpeg'), context);
       precacheImage(const AssetImage('assets/images/IMG_3803.jpeg'), context);
       precacheImage(const AssetImage('assets/images/IMG_1681.jpeg'), context);
@@ -83,7 +134,35 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _controller.dispose();
+    _introController.dispose();
+    _removeIntroOverlay();
     super.dispose();
+  }
+
+  void _showIntroOverlay() {
+    if (_introOverlay != null || !mounted) {
+      return;
+    }
+    final overlay = Overlay.of(context, rootOverlay: true);
+    if (overlay == null) {
+      return;
+    }
+    _introOverlay = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: IgnorePointer(
+          child: _IntroSplash(
+            opacity: _introOpacity,
+            scale: _introScale,
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_introOverlay!);
+  }
+
+  void _removeIntroOverlay() {
+    _introOverlay?.remove();
+    _introOverlay = null;
   }
 
   @override
@@ -133,6 +212,53 @@ class _HomePageState extends State<HomePage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _IntroSplash extends StatelessWidget {
+  const _IntroSplash({
+    required this.opacity,
+    required this.scale,
+  });
+
+  final Animation<double> opacity;
+  final Animation<double> scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: opacity,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(color: cocoshibaMainColor),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final logoWidth =
+                (constraints.maxWidth * 0.45).clamp(160.0, 280.0);
+            final textWidth =
+                (constraints.maxWidth * 0.8).clamp(240.0, 520.0);
+
+            return Center(
+              child: ScaleTransition(
+                scale: scale,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: textWidth),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/ココシバロゴ_w.PNG',
+                        width: logoWidth,
+                        fit: BoxFit.contain,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
