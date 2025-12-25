@@ -1189,13 +1189,15 @@ class _RecentEventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateStyle = theme.textTheme.labelLarge?.copyWith(
+    final dateStyle = theme.textTheme.labelMedium?.copyWith(
       color: color.withOpacity(0.7),
+      fontSize: 11,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.6,
     );
-    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+    final titleStyle = theme.textTheme.bodyMedium?.copyWith(
       color: color,
+      fontSize: 12,
       fontWeight: FontWeight.w700,
       height: 1.3,
     );
@@ -1257,14 +1259,19 @@ class _RecentEventCard extends StatelessWidget {
               ),
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(_formatEventDate(event.startDateTime),
                         style: dateStyle),
-                    const SizedBox(height: 6),
-                    Text(event.name, style: titleStyle),
+                    const SizedBox(height: 4),
+                    Text(
+                      event.name,
+                      style: titleStyle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
