@@ -176,9 +176,9 @@ class _MenuCard extends StatelessWidget {
                 children: [
                   Text(
                     menu.name,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium
+                    style: theme.textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 2),

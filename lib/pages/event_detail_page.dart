@@ -7,6 +7,8 @@ import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:cocoshibaweb/router.dart';
 
 class EventDetailPage extends StatefulWidget {
   const EventDetailPage({
@@ -152,9 +154,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('予約にはログインが必要です')),
-      );
+      context.go(CocoshibaPaths.login);
       return;
     }
 
