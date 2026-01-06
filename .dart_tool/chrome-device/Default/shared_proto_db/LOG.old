@@ -1,17 +1,15 @@
-2026/01/06-12:39:04.194 3b74a3d Reusing MANIFEST /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.63EgAQ/flutter_tools_chrome_device.EvlIyq/Default/shared_proto_db/MANIFEST-000001
-2026/01/06-12:39:04.195 3b74a3d Recovering log #23
-2026/01/06-12:39:04.196 3b74a3d Reusing old log /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.63EgAQ/flutter_tools_chrome_device.EvlIyq/Default/shared_proto_db/000023.log 
-2026/01/06-12:39:04.196 3b74a3d Delete type=0 #13
-2026/01/06-12:39:04.196 3b74a3d Delete type=0 #7
-2026/01/06-12:39:04.196 3b74a3d Delete type=0 #4
-2026/01/06-12:39:04.197 3b74a3d Delete type=0 #10
-2026/01/06-12:39:04.197 3b74a3d Delete type=0 #16
-2026/01/06-12:39:04.197 3b74a3d Delete type=0 #3
-2026/01/06-12:39:04.197 3b74a3d Delete type=2 #14
-2026/01/06-12:39:04.197 3b74a3d Delete type=2 #17
-2026/01/06-12:39:04.197 3b74a3d Delete type=2 #11
-2026/01/06-12:39:04.197 3b74a3d Delete type=2 #8
-2026/01/06-12:39:04.197 3b74a3d Delete type=0 #19
-2026/01/06-12:39:09.225 3b74a2b Level-0 table #27: started
-2026/01/06-12:39:09.232 3b74a2b Level-0 table #27: 124433 bytes OK
-2026/01/06-12:39:09.235 3b74a2b Delete type=0 #23
+2026/01/06-14:15:42.119 3b8b463 Reusing MANIFEST /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.qYu4SJ/flutter_tools_chrome_device.zxsMaJ/Default/shared_proto_db/MANIFEST-000001
+2026/01/06-14:15:42.120 3b8b463 Recovering log #26
+2026/01/06-14:15:42.120 3b8b463 Reusing old log /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.qYu4SJ/flutter_tools_chrome_device.zxsMaJ/Default/shared_proto_db/000026.log 
+2026/01/06-14:15:42.120 3b8b463 Delete type=0 #13
+2026/01/06-14:15:42.120 3b8b463 Delete type=0 #7
+2026/01/06-14:15:42.120 3b8b463 Delete type=0 #4
+2026/01/06-14:15:42.120 3b8b463 Delete type=0 #10
+2026/01/06-14:15:42.120 3b8b463 Delete type=0 #16
+2026/01/06-14:15:42.120 3b8b463 Delete type=0 #3
+2026/01/06-14:15:42.120 3b8b463 Delete type=2 #14
+2026/01/06-14:15:42.120 3b8b463 Delete type=2 #17
+2026/01/06-14:15:42.120 3b8b463 Delete type=2 #11
+2026/01/06-14:15:42.120 3b8b463 Delete type=2 #8
+2026/01/06-14:15:42.121 3b8b463 Delete type=0 #19
+2026/01/06-14:15:42.121 3b8b463 Delete type=0 #23

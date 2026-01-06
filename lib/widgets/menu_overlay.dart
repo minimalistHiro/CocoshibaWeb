@@ -85,25 +85,28 @@ class MenuOverlay extends StatelessWidget {
                             IconButton(
                               tooltip: 'Instagram',
                               onPressed: () => open(storeInstagramUri),
-                              icon: Icon(
-                                Icons.camera_alt_outlined,
-                                color: onPrimary,
+                              icon: Image.asset(
+                                'assets/images/Instagram.png',
+                                width: 28,
+                                height: 28,
                               ),
                             ),
                             IconButton(
                               tooltip: 'Facebook',
                               onPressed: () => open(storeFacebookUri),
-                              icon: Icon(
-                                Icons.facebook_outlined,
-                                color: onPrimary,
+                              icon: Image.asset(
+                                'assets/images/facebook.png',
+                                width: 28,
+                                height: 28,
                               ),
                             ),
                             IconButton(
                               tooltip: 'X',
                               onPressed: () => open(storeXUri),
-                              icon: Icon(
-                                Icons.alternate_email,
-                                color: onPrimary,
+                              icon: Image.asset(
+                                'assets/images/X.png',
+                                width: 28,
+                                height: 28,
                               ),
                             ),
                           ],

@@ -853,6 +853,7 @@ class _EventBodyText extends StatelessWidget {
   static const double _recentEventCompactWidth = 640;
   static const double _recentEventCardHeight = 188;
   static const double _recentEventImageHeight = 118;
+  static const double _eventScheduleButtonHeight = 56;
 
   final _StorySection section;
   final Color textColor;
@@ -952,6 +953,8 @@ class _EventBodyText extends StatelessWidget {
       height += headerHeight;
       height += 12;
       height += _recentEventCardHeight;
+      height += 16;
+      height += _eventScheduleButtonHeight;
     }
 
     return height;
@@ -1168,6 +1171,18 @@ class _RecentEventsSection extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                   ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.center,
+          child: ElevatedButton(
+            onPressed: () => context.go(CocoshibaPaths.calendar),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: cocoshibaMainColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('イベントスケジュールはこちら'),
           ),
         ),
       ],
@@ -2002,9 +2017,10 @@ class _StoreInfoPlain extends StatelessWidget {
                 storeInstagramUri,
                 mode: LaunchMode.externalApplication,
               ),
-              icon: Icon(
-                Icons.camera_alt_outlined,
-                color: theme.colorScheme.onPrimary,
+              icon: Image.asset(
+                'assets/images/Instagram.png',
+                width: 28,
+                height: 28,
               ),
               tooltip: 'Instagram',
             ),
@@ -2013,9 +2029,10 @@ class _StoreInfoPlain extends StatelessWidget {
                 storeFacebookUri,
                 mode: LaunchMode.externalApplication,
               ),
-              icon: Icon(
-                Icons.facebook_outlined,
-                color: theme.colorScheme.onPrimary,
+              icon: Image.asset(
+                'assets/images/facebook.png',
+                width: 28,
+                height: 28,
               ),
               tooltip: 'Facebook',
             ),
@@ -2024,9 +2041,10 @@ class _StoreInfoPlain extends StatelessWidget {
                 storeXUri,
                 mode: LaunchMode.externalApplication,
               ),
-              icon: Icon(
-                Icons.alternate_email,
-                color: theme.colorScheme.onPrimary,
+              icon: Image.asset(
+                'assets/images/X.png',
+                width: 28,
+                height: 28,
               ),
               tooltip: 'X',
             ),
