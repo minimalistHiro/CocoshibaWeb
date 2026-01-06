@@ -2,8 +2,11 @@ import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/pages/existing_event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/widgets/event_card.dart';
+import 'package:cocoshibaweb/app.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:cocoshibaweb/router.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -66,166 +69,142 @@ class _EventsPageState extends State<EventsPage> {
     final firebaseReady = Firebase.apps.isNotEmpty;
     final viewportHeight = MediaQuery.sizeOf(context).height;
 
-    Widget fadeSection({required int index, required Widget child}) {
-      return AnimatedBuilder(
-        animation: _scrollController,
-        builder: (context, builtChild) {
-          final hasOffset = _scrollController.hasClients &&
-              _scrollController.position.hasContentDimensions;
-          final page = hasOffset ? (_scrollController.offset / viewportHeight) : 0.0;
-          final delta = (page - index).abs();
-          final opacity = (1 - delta).clamp(0.0, 1.0);
-          final easedOpacity = Curves.easeOut.transform(opacity);
-          final translateY = 40 * delta;
-
-          return Opacity(
-            opacity: easedOpacity,
-            child: Transform.translate(
-              offset: Offset(0, translateY),
-              child: builtChild,
-            ),
-          );
-        },
-        child: child,
-      );
-    }
-
     return SingleChildScrollView(
       controller: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          fadeSection(
-            index: 0,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Column(
-                  children: [
-                    AspectRatio(
-                      aspectRatio: 4 / 3,
-                      child: Image.asset(
-                        'assets/images/IMG_5959.jpeg',
-                        fit: BoxFit.cover,
-                      ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 4 / 3,
+                    child: Image.asset(
+                      'assets/images/IMG_5959.jpeg',
+                      fit: BoxFit.cover,
                     ),
-                    const SizedBox(height: 48),
-                    Text(
-                      'イベント',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
-                      ),
+                  ),
+                  const SizedBox(height: 48),
+                  Text(
+                    'イベント',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'ココシバでは、多彩なイベントを開催しています。\n予約が必要なもの、不要なものがございますので、是非お気軽にご参加下さい。',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'ココシバでは、多彩なイベントを開催しています。\n予約が必要なもの、不要なものがございますので、是非お気軽にご参加下さい。',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       color: textColor,
                       height: 1.8,
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => context.go(CocoshibaPaths.calendar),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cocoshibaMainColor,
+                      foregroundColor: Colors.white,
                     ),
-                  ],
-                );
-              },
-            ),
+                    child: const Text('イベントスケジュールはこちら'),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 40),
           if (!firebaseReady)
-            fadeSection(
-              index: 1,
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Firebase が初期化されていないため、イベント情報は表示できません。',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                      ),
-                    ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Firebase が初期化されていないため、イベント情報は表示できません。',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor,
                   ),
                 ),
+              ),
             )
           else
-            fadeSection(
-              index: 1,
-              child: StreamBuilder<List<CalendarEvent>>(
-                stream: _eventsStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting &&
-                      !snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+            StreamBuilder<List<CalendarEvent>>(
+              stream: _eventsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                  if (snapshot.hasError) {
-                    return _ErrorState(
-                      title: 'イベントの取得に失敗しました',
-                      message: snapshot.error.toString(),
-                      onRetry: _reload,
-                    );
-                  }
-
-                  final events = snapshot.data ?? const <CalendarEvent>[];
-                  final visibleEvents =
-                      events.where((event) => !event.isClosedDay).toList();
-
-                  if (visibleEvents.isEmpty) {
-                    return const _EmptyState(
-                      icon: Icons.event_available_outlined,
-                      message: '既存イベントがまだありません',
-                    );
-                  }
-
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final count = _crossAxisCount(constraints.maxWidth);
-                      final dpr = MediaQuery.of(context).devicePixelRatio;
-                      final spacing = count > 1 ? 16.0 : 12.0;
-                      final verticalSpacing = count > 1 ? 40.0 : 30.0;
-                      final cardWidth = (constraints.maxWidth -
-                              spacing * (count - 1)) /
-                          count;
-                      final childAspectRatio =
-                          _childAspectRatio(constraints.maxWidth);
-                      final cardHeight = cardWidth / childAspectRatio;
-                      final imageCacheWidth = (cardWidth * dpr).round();
-                      final imageCacheHeight = (cardHeight * dpr).round();
-
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(8),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: count,
-                          crossAxisSpacing: spacing,
-                          mainAxisSpacing: verticalSpacing,
-                          childAspectRatio: childAspectRatio,
-                        ),
-                        itemCount: visibleEvents.length,
-                        itemBuilder: (context, index) {
-                          final event = visibleEvents[index];
-                          return RepaintBoundary(
-                            child: EventCard(
-                              event: event,
-                              onTap: event.isClosedDay
-                                  ? null
-                                  : () => _openDetail(event),
-                              imageAspectRatio: childAspectRatio,
-                              imageCacheWidth:
-                                  imageCacheWidth > 0 ? imageCacheWidth : null,
-                              imageCacheHeight: imageCacheHeight > 0
-                                  ? imageCacheHeight
-                                  : null,
-                            ),
-                          );
-                        },
-                      );
-                    },
+                if (snapshot.hasError) {
+                  return _ErrorState(
+                    title: 'イベントの取得に失敗しました',
+                    message: snapshot.error.toString(),
+                    onRetry: _reload,
                   );
-                },
-              ),
+                }
+
+                final events = snapshot.data ?? const <CalendarEvent>[];
+                final visibleEvents =
+                    events.where((event) => !event.isClosedDay).toList();
+
+                if (visibleEvents.isEmpty) {
+                  return const _EmptyState(
+                    icon: Icons.event_available_outlined,
+                    message: '既存イベントがまだありません',
+                  );
+                }
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final count = _crossAxisCount(constraints.maxWidth);
+                    final dpr = MediaQuery.of(context).devicePixelRatio;
+                    final spacing = count > 1 ? 16.0 : 12.0;
+                    final verticalSpacing = count > 1 ? 40.0 : 30.0;
+                    final cardWidth = (constraints.maxWidth -
+                            spacing * (count - 1)) /
+                        count;
+                    final childAspectRatio =
+                        _childAspectRatio(constraints.maxWidth);
+                    final cardHeight = cardWidth / childAspectRatio;
+                    final imageCacheWidth = (cardWidth * dpr).round();
+                    final imageCacheHeight = (cardHeight * dpr).round();
+
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: count,
+                        crossAxisSpacing: spacing,
+                        mainAxisSpacing: verticalSpacing,
+                        childAspectRatio: childAspectRatio,
+                      ),
+                      itemCount: visibleEvents.length,
+                      itemBuilder: (context, index) {
+                        final event = visibleEvents[index];
+                        return RepaintBoundary(
+                          child: EventCard(
+                            event: event,
+                            onTap: event.isClosedDay
+                                ? null
+                                : () => _openDetail(event),
+                            imageAspectRatio: childAspectRatio,
+                            imageCacheWidth:
+                                imageCacheWidth > 0 ? imageCacheWidth : null,
+                            imageCacheHeight: imageCacheHeight > 0
+                                ? imageCacheHeight
+                                : null,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
         ],
       ),
