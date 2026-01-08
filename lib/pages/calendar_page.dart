@@ -5,6 +5,7 @@ import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/router.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/services/owner_service.dart';
+import 'package:cocoshibaweb/utils/print_helper.dart';
 import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -112,13 +113,14 @@ class _CalendarViewState extends State<CalendarView> {
       stream: _eventsStream,
       builder: (context, snapshot) {
         final events = snapshot.data ?? const <CalendarEvent>[];
-        final grouped = _groupEvents(events);
-        final selectedEvents = _eventsForDate(grouped, _selectedDate);
+    final grouped = _groupEvents(events);
+    final selectedEvents = _eventsForDate(grouped, _selectedDate);
+    final printMonths = _buildPrintMonths(events, currentMonth);
 
-        final content = _CalendarContent(
-          calendarHeight: calendarHeight,
-          header: _buildHeader(
-            context,
+    final content = _CalendarContent(
+      calendarHeight: calendarHeight,
+      header: _buildHeader(
+        context,
             theme,
             currentMonth,
             selectedDate: _selectedDate,
@@ -134,10 +136,13 @@ class _CalendarViewState extends State<CalendarView> {
           monthCount: _monthCount,
           pageController: _pageController,
           monthForIndex: _monthForIndex,
-          eventsForMonth: (month) => _eventsForMonth(grouped, month),
-          embedded: widget.embedded,
-          onPageChanged: (index) => setState(() => _currentPage = index),
-        );
+      eventsForMonth: (month) => _eventsForMonth(grouped, month),
+      embedded: widget.embedded,
+      onPageChanged: (index) => setState(() => _currentPage = index),
+      onPrintSchedule: widget.embedded
+          ? null
+          : () => printSchedule(printMonths),
+    );
 
         if (widget.embedded) return content;
 
@@ -278,6 +283,47 @@ class _CalendarViewState extends State<CalendarView> {
     return labels[(weekday + 6) % 7];
   }
 
+  List<PrintMonthData> _buildPrintMonths(
+    List<CalendarEvent> events,
+    DateTime currentMonth,
+  ) {
+    final nextMonth = DateTime(currentMonth.year, currentMonth.month + 1, 1);
+    return [
+      _buildPrintMonthData(events, currentMonth),
+      _buildPrintMonthData(events, nextMonth),
+    ];
+  }
+
+  PrintMonthData _buildPrintMonthData(
+    List<CalendarEvent> events,
+    DateTime month,
+  ) {
+    final grouped = _groupEvents(events);
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    final days = List.generate(daysInMonth, (index) {
+      final day = index + 1;
+      final date = DateTime(month.year, month.month, day);
+      final dayEvents = grouped[_dateKey(date)] ?? const <CalendarEvent>[];
+      return PrintDayData(
+        dayLabel: '$day',
+        weekdayLabel: _weekdayLabel(date.weekday),
+        events: dayEvents
+            .map(
+              (event) => PrintEventData(
+                title: event.name,
+                timeLabel: event.isClosedDay ? '' : _formatTimeRange(event),
+              ),
+            )
+            .toList(growable: false),
+        isClosedDay: dayEvents.any((event) => event.isClosedDay),
+      );
+    });
+    return PrintMonthData(
+      monthLabel: '${month.month}月',
+      days: days,
+    );
+  }
+
   void _openEventDetail(BuildContext context, CalendarEvent event) {
     context.push(CocoshibaPaths.calendarEventDetail, extra: event);
   }
@@ -338,6 +384,7 @@ class _CalendarContent extends StatelessWidget {
     required this.eventsForMonth,
     required this.embedded,
     required this.onPageChanged,
+    this.onPrintSchedule,
   });
 
   final double calendarHeight;
@@ -355,6 +402,7 @@ class _CalendarContent extends StatelessWidget {
   final Map<int, List<CalendarEvent>> Function(DateTime month) eventsForMonth;
   final bool embedded;
   final ValueChanged<int> onPageChanged;
+  final VoidCallback? onPrintSchedule;
 
   @override
   Widget build(BuildContext context) {
@@ -429,6 +477,22 @@ class _CalendarContent extends StatelessWidget {
             },
           ),
         ),
+        if (onPrintSchedule != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+            child: Align(
+              alignment: Alignment.center,
+              child: ElevatedButton.icon(
+                onPressed: onPrintSchedule,
+                icon: const Icon(Icons.print_outlined),
+                label: const Text('印刷する'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cocoshibaMainColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
           child: _EventList(
