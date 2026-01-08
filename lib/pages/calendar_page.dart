@@ -625,15 +625,18 @@ class _MonthGrid extends StatelessWidget {
                 color: backgroundColor,
               ),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
+                padding: const EdgeInsets.fromLTRB(0, 8, 0, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      isInMonth ? '$dayNumber' : '',
-                      style: baseStyle.copyWith(
-                        color: isInMonth ? textColor : Colors.transparent,
-                        fontWeight: FontWeight.w700,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        isInMonth ? '$dayNumber' : '',
+                        style: baseStyle.copyWith(
+                          color: isInMonth ? textColor : Colors.transparent,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -656,21 +659,20 @@ class _MonthGrid extends StatelessWidget {
                                             horizontal: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color:
-                                                event.color.withOpacity(0.14),
+                                            color: event.color,
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                           ),
                                           child: Text(
                                             event.name,
                                             maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                            overflow: TextOverflow.clip,
+                                            textAlign: TextAlign.center,
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                              fontSize: 9,
+                                              fontSize: 8,
                                               fontWeight: FontWeight.w800,
-                                              color:
-                                                  event.color.withOpacity(0.95),
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ),
