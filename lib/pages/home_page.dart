@@ -55,8 +55,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       body:
           '人と人が交わる時間。\n'
           '小さな挑戦を後押しするイベントを開催しています。',
-      imageAsset: 'assets/images/event_connecting_green.jpeg',
+      imageAsset: 'assets/images/IMG_5959.jpeg',
       layout: _StoryLayout.eventHighlight,
+    ),
+    _StorySection(
+      title: '直近のイベント',
+      subtitle: 'Upcoming Events',
+      body: '近日開催のイベントをご紹介します。',
+      imageAsset: 'assets/images/IMG_1385.jpeg',
+      layout: _StoryLayout.recentEvents,
     ),
     _StorySection(
       title: '手仕事と物語',
@@ -311,6 +318,7 @@ class _StorySection {
 enum _StoryLayout {
   standard,
   eventHighlight,
+  recentEvents,
   handmadeHighlight,
   quietHighlight,
 }
@@ -396,6 +404,11 @@ class _StorySectionView extends StatelessWidget {
         if (section.layout == _StoryLayout.eventHighlight) {
           return _EventHighlightSectionView(
             section: section,
+          );
+        }
+
+        if (section.layout == _StoryLayout.recentEvents) {
+          return _RecentEventsSectionView(
             recentEventsStream: recentEventsStream,
             firebaseReady: firebaseReady,
           );
@@ -495,13 +508,9 @@ class _StorySectionView extends StatelessWidget {
 class _EventHighlightSectionView extends StatefulWidget {
   const _EventHighlightSectionView({
     required this.section,
-    required this.recentEventsStream,
-    required this.firebaseReady,
   });
 
   final _StorySection section;
-  final Stream<List<CalendarEvent>> recentEventsStream;
-  final bool firebaseReady;
 
   @override
   State<_EventHighlightSectionView> createState() =>
@@ -516,7 +525,7 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        _layout = _createCollageLayout();
+        _layout = _createQuietLayout();
       });
     });
   }
@@ -530,14 +539,19 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 940;
         final targetCollageHeight = isWide
-            ? (constraints.maxHeight * 0.62).clamp(320.0, 520.0)
-            : (constraints.maxWidth * 0.7).clamp(260.0, 460.0);
-        final collageWidth = isWide
-            ? (constraints.maxWidth * 0.78).clamp(520.0, 860.0)
-            : constraints.maxWidth * 0.92;
+            ? (constraints.maxHeight * 0.58).clamp(300.0, 520.0)
+            : (constraints.maxWidth * 0.76).clamp(260.0, 460.0);
         final sectionPadding = isWide
             ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
             : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+        final contentWidth =
+            (constraints.maxWidth - sectionPadding.horizontal)
+                .clamp(0.0, double.infinity);
+        final desiredTextWidth =
+            isWide ? constraints.maxWidth * 0.4 : constraints.maxWidth;
+        final collageWidth = isWide
+            ? (contentWidth - desiredTextWidth - 24).clamp(360.0, 860.0)
+            : constraints.maxWidth * 0.94;
         final reservedBottomPadding = isWide ? 88.0 : 0.0;
         final safetyMargin = isWide ? 36.0 : 0.0;
         final contentHeight =
@@ -548,7 +562,7 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
                 safetyMargin)
             .clamp(0.0, double.infinity);
         final textBlockMaxWidth =
-            isWide ? constraints.maxWidth * 0.7 : constraints.maxWidth;
+            isWide ? desiredTextWidth : constraints.maxWidth;
         final textBlockHeight = _EventBodyText.estimateHeight(
           context: context,
           section: widget.section,
@@ -556,12 +570,11 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
           scaleWithWidth: !isWide,
           availableWidth: constraints.maxWidth,
         );
-        final maxCollageHeight = (usableHeight - textBlockHeight)
-            .clamp(0.0, double.infinity);
-        const minCollageHeight = 240.0;
-        var collageHeight = min(targetCollageHeight, maxCollageHeight);
-        final needsScroll =
-            textBlockHeight + minCollageHeight > usableHeight;
+        final desiredLift =
+            min(48.0, (usableHeight - textBlockHeight) * 0.15)
+                .clamp(16.0, 48.0)
+                .toDouble();
+        final collageHeight = targetCollageHeight;
 
         final textBlock = _EventBodyText(
           section: widget.section,
@@ -569,64 +582,73 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
           maxWidth: textBlockMaxWidth,
           scaleWithWidth: !isWide,
           expandToMaxWidth: !isWide,
-          recentEventsStream: widget.recentEventsStream,
-          firebaseReady: widget.firebaseReady,
         );
-
-        final desiredLift =
-            min(48.0, (usableHeight - textBlockHeight) * 0.15)
-                .clamp(16.0, 48.0)
-                .toDouble();
-        final availableLift = max(
+        final overflow = max(
           0.0,
-          usableHeight - (collageHeight + textBlockHeight),
+          collageHeight + textBlockHeight - usableHeight,
         );
-        final textLift = min(desiredLift, availableLift);
-        final totalHeight = collageHeight + textBlockHeight - textLift;
-        if (totalHeight > usableHeight) {
-          final overflow = totalHeight - usableHeight;
-          collageHeight = max(0.0, collageHeight - overflow);
-        }
+        final textLift = isWide
+            ? 0.0
+            : min(
+                desiredLift + overflow,
+                collageHeight * 0.4,
+              );
 
-        final column = Column(
-          mainAxisAlignment:
-              needsScroll ? MainAxisAlignment.start : MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: SizedBox(
-                width: collageWidth,
-                height: needsScroll
-                    ? min(targetCollageHeight, maxCollageHeight)
-                    : collageHeight,
-                child: _EventCollage(
-                  layout: _layout,
-                  isWide: isWide,
-                  title: widget.section.title,
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Transform.translate(
-                offset: Offset(0, -textLift),
-                child: textBlock,
-              ),
-            ),
-          ],
-        );
+        final content = isWide
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: collageWidth,
+                    height: collageHeight,
+                    child: _EventCollage(
+                      layout: _layout,
+                      isWide: isWide,
+                      title: widget.section.title,
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: textBlock,
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: collageWidth,
+                      height: collageHeight,
+                      child: _EventCollage(
+                        layout: _layout,
+                        isWide: isWide,
+                        title: widget.section.title,
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Transform.translate(
+                      offset: Offset(0, -textLift),
+                      child: textBlock,
+                    ),
+                  ),
+                ],
+              );
 
         return SizedBox.expand(
           child: Padding(
             padding: sectionPadding.copyWith(
               bottom: sectionPadding.bottom + reservedBottomPadding,
             ),
-            child: needsScroll
-                ? SingleChildScrollView(
-                    child: column,
-                  )
-                : column,
+            child: content,
           ),
         );
       },
@@ -838,6 +860,65 @@ class _QuietHighlightSectionViewState
   }
 }
 
+class _RecentEventsSectionView extends StatelessWidget {
+  const _RecentEventsSectionView({
+    required this.recentEventsStream,
+    required this.firebaseReady,
+  });
+
+  final Stream<List<CalendarEvent>> recentEventsStream;
+  final bool firebaseReady;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.primary;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 880;
+        final sectionPadding = isWide
+            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+        final contentMaxWidth =
+            isWide ? min(constraints.maxWidth * 0.86, 920.0) : constraints.maxWidth;
+
+        return SizedBox.expand(
+          child: Padding(
+            padding: sectionPadding,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RecentEventsSection(
+                      color: textColor,
+                      availableWidth: contentMaxWidth,
+                      eventsStream: recentEventsStream,
+                      firebaseReady: firebaseReady,
+                    ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _ViewMoreButton(
+                        color: textColor,
+                        compact: contentMaxWidth >= _EventBodyText._viewMoreCompactWidth,
+                        onTap: () => context.go(CocoshibaPaths.events),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _EventBodyText extends StatelessWidget {
   const _EventBodyText({
     required this.section,
@@ -845,24 +926,18 @@ class _EventBodyText extends StatelessWidget {
     required this.maxWidth,
     this.scaleWithWidth = true,
     this.expandToMaxWidth = false,
-    this.recentEventsStream,
-    this.firebaseReady = false,
   });
 
   static const double _viewMoreCompactWidth = 560;
   static const double _recentEventCompactWidth = 640;
   static const double _recentEventCardHeight = 188;
   static const double _recentEventImageHeight = 118;
-  static const double _eventScheduleButtonHeight = 56;
 
   final _StorySection section;
   final Color textColor;
   final double? maxWidth;
   final bool scaleWithWidth;
   final bool expandToMaxWidth;
-  final Stream<List<CalendarEvent>>? recentEventsStream;
-  final bool firebaseReady;
-
   static bool shouldShowViewMore(_StorySection section) =>
       section.subtitle == 'ボードゲーム会やLIVE';
 
@@ -944,17 +1019,6 @@ class _EventBodyText extends StatelessWidget {
       final viewMoreHeight = measureTextHeight('VIEW MORE', viewMoreStyle);
       height += preSpacing;
       height += viewMorePadding + viewMoreHeight + viewMoreGap + underlineHeight;
-      final headerStyle = theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.6,
-      );
-      final headerHeight = measureTextHeight('直近のイベント', headerStyle);
-      height += isCompactViewMore ? 18 : 22;
-      height += headerHeight;
-      height += 12;
-      height += _recentEventCardHeight;
-      height += 16;
-      height += _eventScheduleButtonHeight;
     }
 
     return height;
@@ -1047,14 +1111,6 @@ class _EventBodyText extends StatelessWidget {
                       onTap: () => context.go(CocoshibaPaths.events),
                     ),
                   ),
-                  SizedBox(height: isCompactViewMore ? 18 : 22),
-                  if (recentEventsStream != null)
-                    _RecentEventsSection(
-                      color: textColor,
-                      availableWidth: availableWidth,
-                      eventsStream: recentEventsStream!,
-                      firebaseReady: firebaseReady,
-                    ),
                 ],
               ],
             ),
@@ -1509,7 +1565,7 @@ class _QuietCollage extends StatelessWidget {
 
         final primaryOffset = Offset(
           imageAreaWidth * 0.5,
-          imageAreaHeight * 0.5,
+          imageAreaHeight * 0.38,
         );
         final secondaryOffset = Offset(
           imageAreaWidth * 0.02,
@@ -1588,65 +1644,50 @@ class _EventCollage extends StatelessWidget {
   final _CollageLayout layout;
   final bool isWide;
   final String title;
+  static const double _textAreaWidthFactor = 0.36;
+  static const double _imageAreaPaddingFactor = 0.95;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final titleInset = const EdgeInsets.only(left: 24, bottom: 24);
-        final imageAreaWidth = constraints.maxWidth - titleInset.left;
-        final imageAreaHeight = constraints.maxHeight - titleInset.bottom;
-        final imageAreaSize = Size(imageAreaWidth, imageAreaHeight);
+        final textAreaWidthFactor = isWide ? _textAreaWidthFactor : 0.0;
+        final imageAreaPaddingFactor = isWide ? _imageAreaPaddingFactor : 0.0;
+        final textAreaWidth = constraints.maxWidth * textAreaWidthFactor;
+        final imageAreaWidth = constraints.maxWidth - textAreaWidth;
+        final imageAreaHeight = constraints.maxHeight;
 
         final primarySize = Size(
-          imageAreaWidth * 0.7,
-          imageAreaHeight * 0.7,
+          imageAreaWidth * 0.76,
+          imageAreaHeight * 0.78,
         );
-        const img3803AspectRatio = 2983 / 2237;
-        final secondarySize = _containSize(
-          img3803AspectRatio,
-          imageAreaWidth * 0.68,
-          imageAreaHeight * 0.68,
+        final secondarySize = Size(
+          imageAreaWidth * 0.7,
+          imageAreaHeight * 0.72,
         );
 
         final primaryOffset = Offset(
-          imageAreaWidth * -0.08,
-          imageAreaHeight * -0.06,
+          imageAreaWidth * 0.5,
+          imageAreaHeight * 0.5,
         );
-        final rawSecondaryOffset = Offset(
-          imageAreaWidth * 0.54,
-          imageAreaHeight * 0.38,
+        final secondaryOffset = Offset(
+          imageAreaWidth * 0.02,
+          imageAreaHeight * 0.02,
         );
-
-        final secondaryOffset =
-            isWide
-                ? rawSecondaryOffset
-                : _clampOffsetWithin(
-                    imageAreaSize,
-                    secondarySize,
-                    rawSecondaryOffset,
-                  );
-        final secondaryLayout = isWide
-            ? layout.second
-            : _CollageImageLayout(
-                offset: Offset.zero,
-                rotation: 0,
-                zIndex: layout.second.zIndex,
-              );
+        final secondaryLayout = _CollageImageLayout(
+          offset: layout.second.offset,
+          rotation: layout.second.rotation,
+          zIndex: 1,
+        );
         final primaryLayout = _CollageImageLayout(
           offset: layout.first.offset,
           rotation: layout.first.rotation,
-          zIndex: 1,
-        );
-        final topSecondaryLayout = _CollageImageLayout(
-          offset: secondaryLayout.offset,
-          rotation: secondaryLayout.rotation,
           zIndex: 2,
         );
 
         final imageWidgets = <_CollageImageSpec>[
           _CollageImageSpec(
-            asset: 'assets/images/event_connecting_green.jpeg',
+            asset: 'assets/images/IMG_5959.jpeg',
             size: primarySize,
             baseOffset: primaryOffset,
             layout: primaryLayout,
@@ -1655,7 +1696,7 @@ class _EventCollage extends StatelessWidget {
             asset: 'assets/images/IMG_3803.jpeg',
             size: secondarySize,
             baseOffset: secondaryOffset,
-            layout: topSecondaryLayout,
+            layout: secondaryLayout,
             alignment: Alignment.center,
           ),
         ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
@@ -1664,7 +1705,9 @@ class _EventCollage extends StatelessWidget {
           children: [
             Positioned.fill(
               child: Padding(
-                padding: titleInset,
+                padding: EdgeInsets.only(
+                  right: textAreaWidth * imageAreaPaddingFactor,
+                ),
                 child: Stack(
                   children: imageWidgets
                       .map(
