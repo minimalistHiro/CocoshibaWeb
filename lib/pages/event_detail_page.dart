@@ -256,8 +256,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final event = _event;
     final reservationEnabled =
         widget.showReservationActions && !widget.isExistingEvent;
-    final title =
-        widget.title ?? (widget.isExistingEvent ? '既存イベント詳細' : 'イベント詳細');
 
     return StreamBuilder<int>(
       stream: _reservationCountStream,
@@ -289,50 +287,64 @@ class _EventDetailPageState extends State<EventDetailPage> {
             : null;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(title),
-            actions: [
-              StreamBuilder<bool>(
-                stream: _watchIsOwner(),
-                builder: (context, ownerSnapshot) {
-                  final isOwner = ownerSnapshot.data == true;
-                  if (!isOwner) return const SizedBox.shrink();
-                  return IconButton(
-                    tooltip: '編集',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () async {
-                      final updated = await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => EventEditPage(
-                            event: _event,
-                            isExistingEvent: widget.isExistingEvent,
-                          ),
-                        ),
-                      );
-                      if (!mounted || updated is! CalendarEvent) return;
-                      setState(() => _event = updated);
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
           body: Column(
             children: [
               Expanded(
                 child: SafeArea(
+                  top: false,
                   bottom: false,
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _EventImageCarousel(
-                          imageUrls: event.imageUrls,
-                          controller: _imageController,
-                          currentIndex: _currentImageIndex,
-                          onPageChanged: (index) {
-                            setState(() => _currentImageIndex = index);
-                          },
+                        Stack(
+                          children: [
+                            _EventImageCarousel(
+                              imageUrls: event.imageUrls,
+                              controller: _imageController,
+                              currentIndex: _currentImageIndex,
+                              onPageChanged: (index) {
+                                setState(() => _currentImageIndex = index);
+                              },
+                            ),
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: SafeArea(
+                                bottom: false,
+                                child: StreamBuilder<bool>(
+                                  stream: _watchIsOwner(),
+                                  builder: (context, ownerSnapshot) {
+                                    final isOwner = ownerSnapshot.data == true;
+                                    if (!isOwner) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return IconButton(
+                                      tooltip: '編集',
+                                      icon: const Icon(Icons.edit_outlined),
+                                      onPressed: () async {
+                                        final updated =
+                                            await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => EventEditPage(
+                                              event: _event,
+                                              isExistingEvent:
+                                                  widget.isExistingEvent,
+                                            ),
+                                          ),
+                                        );
+                                        if (!mounted ||
+                                            updated is! CalendarEvent) {
+                                          return;
+                                        }
+                                        setState(() => _event = updated);
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         Padding(
                           padding: const EdgeInsets.all(24),

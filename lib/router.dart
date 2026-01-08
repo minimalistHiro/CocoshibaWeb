@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:cocoshibaweb/auth/auth_service.dart';
+import 'package:cocoshibaweb/models/calendar_event.dart';
 import 'package:cocoshibaweb/pages/calendar_page.dart';
 import 'package:cocoshibaweb/pages/book_order_page.dart';
 import 'package:cocoshibaweb/pages/data_privacy_page.dart';
 import 'package:cocoshibaweb/pages/faq_page.dart';
 import 'package:cocoshibaweb/pages/account_info_register_page.dart';
 import 'package:cocoshibaweb/pages/event_create_page.dart';
+import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/pages/events_page.dart';
 import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
@@ -30,6 +32,7 @@ class CocoshibaPaths {
   static const home = '/';
   static const events = '/events';
   static const calendar = '/calendar';
+  static const calendarEventDetail = '/calendar/event';
   static const menu = '/menu';
   static const bookOrder = '/book-order';
   static const store = '/store';
@@ -112,6 +115,18 @@ class CocoshibaRouter {
                 GoRoute(
                   path: CocoshibaPaths.calendar,
                   builder: (context, state) => const CalendarPage(),
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.calendarEventDetail,
+                  builder: (context, state) {
+                    final extra = state.extra;
+                    if (extra is CalendarEvent) {
+                      return EventDetailPage(event: extra);
+                    }
+                    return const Center(
+                      child: Text('イベント情報が見つかりませんでした。'),
+                    );
+                  },
                 ),
                 GoRoute(
                   path: CocoshibaPaths.calendarEventCreate,

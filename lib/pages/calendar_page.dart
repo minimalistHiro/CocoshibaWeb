@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/models/calendar_event.dart';
-import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/router.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/services/owner_service.dart';
@@ -280,9 +279,7 @@ class _CalendarViewState extends State<CalendarView> {
   }
 
   void _openEventDetail(BuildContext context, CalendarEvent event) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
-    );
+    context.push(CocoshibaPaths.calendarEventDetail, extra: event);
   }
 }
 
