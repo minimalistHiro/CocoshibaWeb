@@ -133,17 +133,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _introController.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showIntroOverlay();
-      for (final section in _sections) {
-        precacheImage(AssetImage(section.imageAsset), context);
-      }
       precacheImage(
         const AssetImage('assets/images/ココシバロゴ_w.PNG'),
         context,
       );
-      precacheImage(const AssetImage('assets/images/IMG_1385.jpeg'), context);
-      precacheImage(const AssetImage('assets/images/IMG_3803.jpeg'), context);
-      precacheImage(const AssetImage('assets/images/IMG_1681.jpeg'), context);
-      precacheImage(const AssetImage('assets/images/IMG_1683.jpeg'), context);
     });
   }
 
@@ -268,6 +261,8 @@ class _IntroSplash extends StatelessWidget {
                 (constraints.maxWidth * 0.45).clamp(160.0, 280.0);
             final textWidth =
                 (constraints.maxWidth * 0.8).clamp(240.0, 520.0);
+            final dpr = MediaQuery.of(context).devicePixelRatio;
+            final logoCacheWidth = (logoWidth * dpr).round();
 
             return Center(
               child: ScaleTransition(
@@ -281,6 +276,7 @@ class _IntroSplash extends StatelessWidget {
                         'assets/images/ココシバロゴ_w.PNG',
                         width: logoWidth,
                         fit: BoxFit.contain,
+                        cacheWidth: logoCacheWidth,
                       ),
                     ],
                   ),
@@ -342,6 +338,9 @@ class _StorySectionView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (section.isHero) {
+          final dpr = MediaQuery.of(context).devicePixelRatio;
+          final heroCacheWidth = (constraints.maxWidth * dpr).round();
+          final heroCacheHeight = (constraints.maxHeight * dpr).round();
           return SizedBox.expand(
             child: Stack(
               fit: StackFit.expand,
@@ -349,6 +348,8 @@ class _StorySectionView extends StatelessWidget {
                 Image.asset(
                   section.imageAsset,
                   fit: BoxFit.cover,
+                  cacheWidth: heroCacheWidth,
+                  cacheHeight: heroCacheHeight,
                 ),
                 Container(
                   color: Colors.black.withOpacity(0.2),
@@ -1799,6 +1800,10 @@ class _CollageImageFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final cacheWidth = (size.width * dpr).round();
+    final cacheHeight = (size.height * dpr).round();
+
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: [
@@ -1815,6 +1820,8 @@ class _CollageImageFrame extends StatelessWidget {
         height: size.height,
         fit: fit,
         alignment: alignment,
+        cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight,
       ),
     );
   }
@@ -1948,11 +1955,16 @@ class _StoryImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final cacheWidth = width != null ? (width! * dpr).round() : null;
+    final cacheHeight = height != null ? (height! * dpr).round() : null;
     final image = Image.asset(
       imageAsset,
       width: width,
       height: height,
       fit: BoxFit.cover,
+      cacheWidth: cacheWidth,
+      cacheHeight: cacheHeight,
     );
 
     if (!hasRadius) {
