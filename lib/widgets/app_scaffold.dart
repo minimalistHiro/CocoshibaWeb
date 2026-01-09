@@ -403,6 +403,7 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 IconButton(
                   tooltip: 'メニュー',
                   onPressed: onMenuPressed,
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
                   icon: AnimatedIcon(
                     icon: AnimatedIcons.menu_close,
                     progress: menuProgress,
@@ -420,6 +421,7 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                       return IconButton(
                         tooltip: 'ログイン',
                         onPressed: () => context.go(CocoshibaPaths.login),
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
                         icon: const Icon(Icons.person_outline),
                       );
                     }
@@ -451,12 +453,14 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                               context.go(CocoshibaPaths.home);
                             }
                           },
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
                           icon: const Icon(Icons.logout),
                         ),
                         IconButton(
                           tooltip: 'アカウント',
                           onPressed: () =>
                               _showAccountItemsDialog(context, user: user),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
                           icon: _buildUserAvatar(user),
                         ),
                       ],
@@ -482,6 +486,7 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                         tooltip: 'アカウント',
                         onPressed: () =>
                             _showAccountItemsDialog(context, user: user),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         icon: _buildUserAvatar(user),
                       ),
                     ],

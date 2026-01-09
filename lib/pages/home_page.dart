@@ -12,6 +12,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cocoshibaweb/router.dart';
+import 'package:cocoshibaweb/auth/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -229,6 +230,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           section: _sections[index],
                           recentEventsStream: _recentEventsStream,
                           firebaseReady: _firebaseReady,
+                          eventService: _eventService ?? EventService(),
                         ),
                 ),
               );
@@ -324,11 +326,13 @@ class _StorySectionView extends StatelessWidget {
     required this.section,
     required this.recentEventsStream,
     required this.firebaseReady,
+    required this.eventService,
   });
 
   final _StorySection section;
   final Stream<List<CalendarEvent>> recentEventsStream;
   final bool firebaseReady;
+  final EventService eventService;
 
   @override
   Widget build(BuildContext context) {
@@ -411,6 +415,7 @@ class _StorySectionView extends StatelessWidget {
         if (section.layout == _StoryLayout.recentEvents) {
           return _RecentEventsSectionView(
             recentEventsStream: recentEventsStream,
+            eventService: eventService,
             firebaseReady: firebaseReady,
           );
         }
@@ -815,10 +820,12 @@ class _QuietHighlightSectionViewState
 class _RecentEventsSectionView extends StatelessWidget {
   const _RecentEventsSectionView({
     required this.recentEventsStream,
+    required this.eventService,
     required this.firebaseReady,
   });
 
   final Stream<List<CalendarEvent>> recentEventsStream;
+  final EventService eventService;
   final bool firebaseReady;
 
   @override
@@ -834,6 +841,7 @@ class _RecentEventsSectionView extends StatelessWidget {
             : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
         final contentMaxWidth =
             isWide ? min(constraints.maxWidth * 0.86, 920.0) : constraints.maxWidth;
+        const sectionGap = 12.0;
 
         return SizedBox.expand(
           child: Padding(
@@ -845,13 +853,20 @@ class _RecentEventsSectionView extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _ReservedEventsContent(
+                      textColor: textColor,
+                      availableWidth: contentMaxWidth,
+                      eventService: eventService,
+                      firebaseReady: firebaseReady,
+                    ),
+                    const SizedBox(height: sectionGap),
                     _RecentEventsSection(
                       color: textColor,
                       availableWidth: contentMaxWidth,
                       eventsStream: recentEventsStream,
                       firebaseReady: firebaseReady,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: sectionGap),
                     Align(
                       alignment: Alignment.centerRight,
                       child: _ViewMoreButton(
@@ -867,6 +882,107 @@ class _RecentEventsSectionView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ReservedEventsContent extends StatelessWidget {
+  const _ReservedEventsContent({
+    required this.textColor,
+    required this.availableWidth,
+    required this.eventService,
+    required this.firebaseReady,
+  });
+
+  final Color textColor;
+  final double availableWidth;
+  final EventService eventService;
+  final bool firebaseReady;
+
+  Stream<List<CalendarEvent>> _reservedStreamFor(AuthUser user) {
+    return eventService
+        .watchReservedEvents(user.uid)
+        .map((events) => events.take(7).toList(growable: false));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AppServices.of(context).auth;
+
+    return StreamBuilder<AuthUser?>(
+      stream: auth.onAuthStateChanged,
+      builder: (context, snapshot) {
+        final user = snapshot.data ?? auth.currentUser;
+        if (user == null) {
+          return _ReservedEventsLoginPrompt(
+            textColor: textColor,
+          );
+        }
+        return _RecentEventsSection(
+          color: textColor,
+          availableWidth: availableWidth,
+          eventsStream: _reservedStreamFor(user),
+          firebaseReady: firebaseReady,
+          title: '予約したイベント',
+          emptyMessage: '予約したイベントはまだありません',
+          showScheduleButton: false,
+        );
+      },
+    );
+  }
+}
+
+class _ReservedEventsLoginPrompt extends StatelessWidget {
+  const _ReservedEventsLoginPrompt({
+    required this.textColor,
+  });
+
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      color: textColor,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.6,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('予約したイベント', style: titleStyle),
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: const BoxDecoration(color: Colors.white),
+          child: SizedBox(
+            height: _EventBodyText._recentEventCardHeight,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'ログインして予約したイベントを確認しましょう',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: textColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => context.go(CocoshibaPaths.login),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cocoshibaMainColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('ログイン'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1090,12 +1206,22 @@ class _RecentEventsSection extends StatelessWidget {
     required this.availableWidth,
     required this.eventsStream,
     required this.firebaseReady,
+    this.title = '直近のイベント',
+    this.emptyMessage = '直近のイベントがありません',
+    this.showScheduleButton = true,
+    this.scheduleButtonLabel = 'イベントスケジュールはこちら',
+    this.onSchedulePressed,
   });
 
   final Color color;
   final double availableWidth;
   final Stream<List<CalendarEvent>> eventsStream;
   final bool firebaseReady;
+  final String title;
+  final String emptyMessage;
+  final bool showScheduleButton;
+  final String scheduleButtonLabel;
+  final VoidCallback? onSchedulePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1110,7 +1236,7 @@ class _RecentEventsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('直近のイベント', style: titleStyle),
+        Text(title, style: titleStyle),
         const SizedBox(height: 12),
         DecoratedBox(
           decoration: const BoxDecoration(color: Colors.white),
@@ -1141,7 +1267,7 @@ class _RecentEventsSection extends StatelessWidget {
                       if (events.isEmpty) {
                         return Center(
                           child: Text(
-                            '直近のイベントがありません',
+                            emptyMessage,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: color,
                             ),
@@ -1181,18 +1307,21 @@ class _RecentEventsSection extends StatelessWidget {
                   ),
           ),
         ),
-        const SizedBox(height: 16),
-        Align(
-          alignment: Alignment.center,
-          child: ElevatedButton(
-            onPressed: () => context.go(CocoshibaPaths.calendar),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: cocoshibaMainColor,
-              foregroundColor: Colors.white,
+        if (showScheduleButton) ...[
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.center,
+            child: ElevatedButton(
+              onPressed:
+                  onSchedulePressed ?? () => context.go(CocoshibaPaths.calendar),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: cocoshibaMainColor,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(scheduleButtonLabel),
             ),
-            child: const Text('イベントスケジュールはこちら'),
           ),
-        ),
+        ],
       ],
     );
   }
