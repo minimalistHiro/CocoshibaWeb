@@ -1,4 +1,6 @@
+import 'package:cocoshibaweb/router.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -156,6 +158,19 @@ class PrivacyPolicyPage extends StatelessWidget {
           'メール：h.kaneko.baseball@icloud.com\n'
           '受付時間：水〜日11:00〜18:00（休：月、火）',
         ),
+        const SizedBox(height: 24),
+        Center(
+          child: FilledButton(
+            onPressed: () async {
+              final popped = await Navigator.of(context).maybePop();
+              if (!popped) {
+                context.go(CocoshibaPaths.signup);
+              }
+            },
+            child: const Text('戻る'),
+          ),
+        ),
+        const SizedBox(height: 24),
       ],
     );
   }
