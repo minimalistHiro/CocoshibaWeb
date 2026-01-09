@@ -356,6 +356,7 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                           overflow: TextOverflow.visible,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w800,
                                   ),
                         ),
