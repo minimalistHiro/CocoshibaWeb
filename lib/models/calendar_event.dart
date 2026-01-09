@@ -15,6 +15,7 @@ class CalendarEvent {
     required this.capacity,
     required this.isClosedDay,
     this.existingEventId,
+    this.orderIndex,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class CalendarEvent {
   final int capacity;
   final bool isClosedDay;
   final String? existingEventId;
+  final int? orderIndex;
 
   Color get color => Color(colorValue);
 
@@ -57,6 +59,7 @@ class CalendarEvent {
       capacity: (data['capacity'] as int?) ?? 0,
       isClosedDay: data['isClosedDay'] == true,
       existingEventId: data['existingEventId'] as String?,
+      orderIndex: (data['orderIndex'] as num?)?.toInt(),
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:cocoshibaweb/pages/account_info_register_page.dart';
 import 'package:cocoshibaweb/pages/event_create_page.dart';
 import 'package:cocoshibaweb/pages/event_detail_page.dart';
 import 'package:cocoshibaweb/pages/events_page.dart';
+import 'package:cocoshibaweb/pages/existing_event_detail_page.dart';
 import 'package:cocoshibaweb/pages/home_page.dart';
 import 'package:cocoshibaweb/pages/login_info_update_page.dart';
 import 'package:cocoshibaweb/pages/login_page.dart';
@@ -33,6 +34,7 @@ class CocoshibaPaths {
   static const events = '/events';
   static const calendar = '/calendar';
   static const calendarEventDetail = '/calendar/event';
+  static const existingEventDetail = '/events/event';
   static const menu = '/menu';
   static const bookOrder = '/book-order';
   static const store = '/store';
@@ -122,6 +124,18 @@ class CocoshibaRouter {
                     final extra = state.extra;
                     if (extra is CalendarEvent) {
                       return EventDetailPage(event: extra);
+                    }
+                    return const Center(
+                      child: Text('イベント情報が見つかりませんでした。'),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: CocoshibaPaths.existingEventDetail,
+                  builder: (context, state) {
+                    final extra = state.extra;
+                    if (extra is CalendarEvent) {
+                      return ExistingEventDetailPage(event: extra);
                     }
                     return const Center(
                       child: Text('イベント情報が見つかりませんでした。'),

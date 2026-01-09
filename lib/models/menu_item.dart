@@ -45,6 +45,7 @@ class MenuItem {
     required this.price,
     required this.category,
     this.imageUrl,
+    this.orderIndex,
     this.createdAt,
     this.updatedAt,
   });
@@ -54,6 +55,7 @@ class MenuItem {
   final int price;
   final MenuCategory category;
   final String? imageUrl;
+  final int? orderIndex;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -70,6 +72,7 @@ class MenuItem {
         data?['category'] as String?,
       ),
       imageUrl: data?['imageUrl'] as String?,
+      orderIndex: (data?['orderIndex'] as num?)?.toInt(),
       createdAt: created is Timestamp ? created.toDate() : null,
       updatedAt: updated is Timestamp ? updated.toDate() : null,
     );

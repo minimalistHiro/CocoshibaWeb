@@ -141,13 +141,24 @@ class EventService {
         final event = CalendarEvent.fromDocument(doc);
         final createdAt = parseDate(data['createdAt']);
         final start = event.startDateTime;
-        final sortKey =
+        final fallback =
             start.millisecondsSinceEpoch == 0 ? createdAt : start.toLocal();
-        return (event: event, sortKey: sortKey);
+        return (
+          event: event,
+          orderIndex: event.orderIndex,
+          fallback: fallback,
+        );
       }).toList();
 
       items.sort((a, b) {
-        final cmp = a.sortKey.compareTo(b.sortKey);
+        const maxIndex = 1 << 30;
+        final aIndex = a.orderIndex ?? maxIndex;
+        final bIndex = b.orderIndex ?? maxIndex;
+        if (aIndex != bIndex) {
+          final cmp = aIndex.compareTo(bIndex);
+          return descending ? -cmp : cmp;
+        }
+        final cmp = a.fallback.compareTo(b.fallback);
         return descending ? -cmp : cmp;
       });
 

@@ -1,6 +1,7 @@
 import 'package:cocoshibaweb/models/menu_item.dart';
 import 'package:cocoshibaweb/services/menu_service.dart';
 import 'package:cocoshibaweb/widgets/cocoshiba_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class MenuPage extends StatefulWidget {
@@ -40,73 +41,80 @@ class _MenuPageState extends State<MenuPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Center(
-          child: Text(
-            'メニュー',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall
+    return DefaultTabController(
+      length: _categoryOrder.length,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Center(
+            child: Text(
+              'メニュー',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TabBar(
+            labelStyle: theme.textTheme.titleSmall
                 ?.copyWith(fontWeight: FontWeight.w800),
+            tabs: _categoryOrder
+                .map((category) => Tab(text: category.label))
+                .toList(),
           ),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: StreamBuilder<List<MenuItem>>(
-            stream: _menusStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  !snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          const SizedBox(height: 8),
+          Expanded(
+            child: StreamBuilder<List<MenuItem>>(
+              stream: _menusStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              if (snapshot.hasError) {
-                return _ErrorState(
-                  onRetry: _reloadMenus,
-                  message: snapshot.error.toString(),
-                );
-              }
+                if (snapshot.hasError) {
+                  return _ErrorState(
+                    onRetry: _reloadMenus,
+                    message: snapshot.error.toString(),
+                  );
+                }
 
-              final menus = snapshot.data ?? [];
-              if (menus.isEmpty) {
-                return const _EmptyState(
-                  icon: Icons.restaurant_menu_outlined,
-                  message: 'メニューがまだ登録されていません',
-                );
-              }
+                final menus = snapshot.data ?? [];
+                if (menus.isEmpty) {
+                  return const _EmptyState(
+                    icon: Icons.restaurant_menu_outlined,
+                    message: 'メニューがまだ登録されていません',
+                  );
+                }
 
-              return ListView(
-                padding: const EdgeInsets.only(bottom: 24),
-                children: [
-                  for (final category in _categoryOrder) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      child: Text(
-                        category.label,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                return TabBarView(
+                  children: [
+                    for (final category in _categoryOrder)
+                      _CategoryGrid(
+                        menus: (menus
+                              .where((menu) => menu.category == category)
+                              .toList()
+                            ..sort(
+                              (a, b) => _compareOrderIndex(
+                                a.orderIndex,
+                                b.orderIndex,
+                              ),
+                            )),
+                        emptyMessage: '${category.label} のメニューはまだありません',
                       ),
-                    ),
-                    _CategorySection(
-                      menus: menus
-                          .where((menu) => menu.category == category)
-                          .toList(),
-                      emptyMessage: '${category.label} のメニューはまだありません',
-                    ),
                   ],
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _CategorySection extends StatelessWidget {
-  const _CategorySection({required this.menus, required this.emptyMessage});
+class _CategoryGrid extends StatelessWidget {
+  const _CategoryGrid({required this.menus, required this.emptyMessage});
 
   final List<MenuItem> menus;
   final String emptyMessage;
@@ -114,19 +122,14 @@ class _CategorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (menus.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: _EmptyState(
-          icon: Icons.search_off_outlined,
-          message: emptyMessage,
-        ),
+      return _EmptyState(
+        icon: Icons.search_off_outlined,
+        message: emptyMessage,
       );
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
@@ -137,6 +140,11 @@ class _CategorySection extends StatelessWidget {
       itemBuilder: (context, index) => _MenuCard(menu: menus[index]),
     );
   }
+}
+
+int _compareOrderIndex(int? a, int? b) {
+  const maxIndex = 1 << 30;
+  return (a ?? maxIndex).compareTo(b ?? maxIndex);
 }
 
 class _MenuCard extends StatelessWidget {
@@ -216,6 +224,18 @@ class _MenuImage extends StatelessWidget {
 
     if (imageUrl == null || imageUrl!.isEmpty) {
       return placeholder;
+    }
+
+    if (kIsWeb) {
+      return Image.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => placeholder,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return placeholder;
+        },
+      );
     }
 
     return CocoshibaNetworkImage(

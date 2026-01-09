@@ -12,7 +12,7 @@ class MenuService {
       _firestore.collection('menus');
 
   Stream<List<MenuItem>> watchMenus() {
-    return _menusRef.orderBy('createdAt', descending: true).snapshots().map(
+    return _menusRef.orderBy('orderIndex').snapshots().map(
           (snapshot) =>
               snapshot.docs.map(MenuItem.fromDocument).toList(growable: false),
         );

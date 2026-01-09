@@ -1,5 +1,4 @@
 import 'package:cocoshibaweb/models/calendar_event.dart';
-import 'package:cocoshibaweb/pages/existing_event_detail_page.dart';
 import 'package:cocoshibaweb/services/event_service.dart';
 import 'package:cocoshibaweb/widgets/event_card.dart';
 import 'package:cocoshibaweb/app.dart';
@@ -37,7 +36,7 @@ class _EventsPageState extends State<EventsPage> {
       return Stream.value(const <CalendarEvent>[]);
     }
     _eventService ??= EventService();
-    return _eventService!.watchAllExistingEvents(descending: true);
+    return _eventService!.watchAllExistingEvents(descending: false);
   }
 
   void _reload() {
@@ -55,11 +54,7 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   void _openDetail(CalendarEvent event) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ExistingEventDetailPage(event: event),
-      ),
-    );
+    context.push(CocoshibaPaths.existingEventDetail, extra: event);
   }
 
   @override

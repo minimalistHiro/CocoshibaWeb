@@ -152,7 +152,7 @@ class _EventCreatePageState extends State<EventCreatePage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 420),
             child: StreamBuilder<List<CalendarEvent>>(
-              stream: _eventService.watchAllExistingEvents(descending: true),
+              stream: _eventService.watchAllExistingEvents(descending: false),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting &&
                     !snapshot.hasData) {
