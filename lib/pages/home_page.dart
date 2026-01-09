@@ -539,117 +539,68 @@ class _EventHighlightSectionViewState extends State<_EventHighlightSectionView> 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 940;
-        final targetCollageHeight = isWide
+        final collageHeight = isWide
             ? (constraints.maxHeight * 0.58).clamp(300.0, 520.0)
             : (constraints.maxWidth * 0.76).clamp(260.0, 460.0);
-        final sectionPadding = isWide
-            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
-            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
-        final contentWidth =
-            (constraints.maxWidth - sectionPadding.horizontal)
-                .clamp(0.0, double.infinity);
-        final desiredTextWidth =
-            isWide ? constraints.maxWidth * 0.4 : constraints.maxWidth;
         final collageWidth = isWide
-            ? (contentWidth - desiredTextWidth - 24).clamp(360.0, 860.0)
+            ? (constraints.maxWidth * 0.82).clamp(560.0, 920.0)
             : constraints.maxWidth * 0.94;
-        final reservedBottomPadding = isWide ? 88.0 : 0.0;
-        final safetyMargin = isWide ? 36.0 : 0.0;
-        final contentHeight =
-            (constraints.maxHeight - sectionPadding.vertical)
-                .clamp(0.0, double.infinity);
-        final usableHeight = (contentHeight -
-                reservedBottomPadding -
-                safetyMargin)
-            .clamp(0.0, double.infinity);
-        final textBlockMaxWidth =
-            isWide ? desiredTextWidth : constraints.maxWidth;
-        final textBlockHeight = _EventBodyText.estimateHeight(
-          context: context,
-          section: widget.section,
-          maxWidth: textBlockMaxWidth,
-          scaleWithWidth: !isWide,
-          availableWidth: constraints.maxWidth,
-        );
-        final desiredLift =
-            min(48.0, (usableHeight - textBlockHeight) * 0.15)
-                .clamp(16.0, 48.0)
-                .toDouble();
-        final collageHeight = targetCollageHeight;
 
         final textBlock = _EventBodyText(
           section: widget.section,
           textColor: textColor,
-          maxWidth: textBlockMaxWidth,
+          maxWidth: isWide ? constraints.maxWidth * 0.4 : constraints.maxWidth,
           scaleWithWidth: !isWide,
-          expandToMaxWidth: !isWide,
         );
-        final overflow = max(
-          0.0,
-          collageHeight + textBlockHeight - usableHeight,
-        );
-        final textLift = isWide
-            ? 0.0
-            : min(
-                desiredLift + overflow,
-                collageHeight * 0.4,
-              );
 
-        final content = isWide
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: collageWidth,
-                    height: collageHeight,
-                    child: _EventCollage(
-                      layout: _layout,
-                      isWide: isWide,
-                      title: widget.section.title,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: textBlock,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.center,
+        final sectionPadding = isWide
+            ? const EdgeInsets.symmetric(horizontal: 32, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+
+        return SizedBox.expand(
+          child: Padding(
+            padding: sectionPadding,
+            child: isWide
+                ? Center(
                     child: SizedBox(
                       width: collageWidth,
                       height: collageHeight,
                       child: _EventCollage(
                         layout: _layout,
-                        isWide: isWide,
-                        title: widget.section.title,
+                        textBlock: Align(
+                          alignment: Alignment.topRight,
+                          child: textBlock,
+                        ),
                       ),
                     ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: collageWidth,
+                          height: collageHeight,
+                          child: _EventCollage(
+                            layout: _layout,
+                            textBlock: const SizedBox.shrink(),
+                            textAreaWidthFactor: 0,
+                            imageAreaPaddingFactor: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Transform.translate(
+                          offset: const Offset(0, -32),
+                          child: textBlock,
+                        ),
+                      ),
+                    ],
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Transform.translate(
-                      offset: Offset(0, -textLift),
-                      child: textBlock,
-                    ),
-                  ),
-                ],
-              );
-
-        return SizedBox.expand(
-          child: Padding(
-            padding: sectionPadding.copyWith(
-              bottom: sectionPadding.bottom + reservedBottomPadding,
-            ),
-            child: content,
           ),
         );
       },
@@ -1557,7 +1508,7 @@ class _QuietCollage extends StatelessWidget {
 
         final primarySize = Size(
           imageAreaWidth * 0.76,
-          imageAreaHeight * 0.78,
+          imageAreaHeight * 0.76,
         );
         final secondarySize = Size(
           imageAreaWidth * 0.7,
@@ -1638,29 +1589,27 @@ class _QuietCollage extends StatelessWidget {
 class _EventCollage extends StatelessWidget {
   const _EventCollage({
     required this.layout,
-    required this.isWide,
-    required this.title,
+    required this.textBlock,
+    this.textAreaWidthFactor = 0.36,
+    this.imageAreaPaddingFactor = 0.95,
   });
 
   final _CollageLayout layout;
-  final bool isWide;
-  final String title;
-  static const double _textAreaWidthFactor = 0.36;
-  static const double _imageAreaPaddingFactor = 0.95;
+  final Widget textBlock;
+  final double textAreaWidthFactor;
+  final double imageAreaPaddingFactor;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textAreaWidthFactor = isWide ? _textAreaWidthFactor : 0.0;
-        final imageAreaPaddingFactor = isWide ? _imageAreaPaddingFactor : 0.0;
         final textAreaWidth = constraints.maxWidth * textAreaWidthFactor;
         final imageAreaWidth = constraints.maxWidth - textAreaWidth;
         final imageAreaHeight = constraints.maxHeight;
 
         final primarySize = Size(
           imageAreaWidth * 0.76,
-          imageAreaHeight * 0.78,
+          imageAreaHeight * 0.76,
         );
         final secondarySize = Size(
           imageAreaWidth * 0.7,
@@ -1669,35 +1618,34 @@ class _EventCollage extends StatelessWidget {
 
         final primaryOffset = Offset(
           imageAreaWidth * 0.5,
-          imageAreaHeight * 0.5,
+          imageAreaHeight * 0.38,
         );
         final secondaryOffset = Offset(
           imageAreaWidth * 0.02,
           imageAreaHeight * 0.02,
         );
-        final secondaryLayout = _CollageImageLayout(
-          offset: layout.second.offset,
-          rotation: layout.second.rotation,
-          zIndex: 1,
-        );
-        final primaryLayout = _CollageImageLayout(
-          offset: layout.first.offset,
-          rotation: layout.first.rotation,
-          zIndex: 2,
-        );
 
         final imageWidgets = <_CollageImageSpec>[
           _CollageImageSpec(
             asset: 'assets/images/IMG_5959.jpeg',
-            size: primarySize,
-            baseOffset: primaryOffset,
-            layout: primaryLayout,
+            size: secondarySize,
+            baseOffset: secondaryOffset,
+            layout: _CollageImageLayout(
+              offset: layout.second.offset,
+              rotation: layout.second.rotation,
+              zIndex: 1,
+            ),
+            alignment: Alignment.center,
           ),
           _CollageImageSpec(
             asset: 'assets/images/IMG_3803.jpeg',
-            size: secondarySize,
-            baseOffset: secondaryOffset,
-            layout: secondaryLayout,
+            size: primarySize,
+            baseOffset: primaryOffset,
+            layout: _CollageImageLayout(
+              offset: layout.first.offset,
+              rotation: layout.first.rotation,
+              zIndex: 2,
+            ),
             alignment: Alignment.center,
           ),
         ]..sort((a, b) => a.layout.zIndex.compareTo(b.layout.zIndex));
@@ -1723,6 +1671,16 @@ class _EventCollage extends StatelessWidget {
                       )
                       .toList(),
                 ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: textAreaWidth,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: textBlock,
               ),
             ),
           ],
@@ -1802,7 +1760,6 @@ class _CollageImageFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final dpr = MediaQuery.of(context).devicePixelRatio;
     final cacheWidth = (size.width * dpr).round();
-    final cacheHeight = (size.height * dpr).round();
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1821,7 +1778,6 @@ class _CollageImageFrame extends StatelessWidget {
         fit: fit,
         alignment: alignment,
         cacheWidth: cacheWidth,
-        cacheHeight: cacheHeight,
       ),
     );
   }
@@ -1867,14 +1823,6 @@ Size _containSize(double aspectRatio, double maxWidth, double maxHeight) {
     width = height * aspectRatio;
   }
   return Size(width, height);
-}
-
-Offset _clampOffsetWithin(Size areaSize, Size itemSize, Offset desired) {
-  final maxX = (areaSize.width - itemSize.width).clamp(0.0, double.infinity);
-  final maxY = (areaSize.height - itemSize.height).clamp(0.0, double.infinity);
-  final dx = desired.dx.clamp(0.0, maxX).toDouble();
-  final dy = desired.dy.clamp(0.0, maxY).toDouble();
-  return Offset(dx, dy);
 }
 
 _CollageLayout _createCollageLayout() {
