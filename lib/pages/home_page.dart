@@ -1223,6 +1223,10 @@ class _RecentEventsSection extends StatelessWidget {
   final String scheduleButtonLabel;
   final VoidCallback? onSchedulePressed;
 
+  void _openDetail(BuildContext context, CalendarEvent event) {
+    context.push(CocoshibaPaths.calendarEventDetail, extra: event);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1287,6 +1291,9 @@ class _RecentEventsSection extends StatelessWidget {
                                       event: event,
                                       width: cardWidth,
                                       color: color,
+                                      onTap: event.isClosedDay
+                                          ? null
+                                          : () => _openDetail(context, event),
                                     ),
                                   ),
                                 )
@@ -1332,11 +1339,13 @@ class _RecentEventCard extends StatelessWidget {
     required this.event,
     required this.width,
     required this.color,
+    this.onTap,
   });
 
   final CalendarEvent event;
   final double width;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1401,33 +1410,39 @@ class _RecentEventCard extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: width,
-                height: _EventBodyText._recentEventImageHeight,
-                child: buildImage(),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_formatEventDate(event.startDateTime),
-                        style: dateStyle),
-                    const SizedBox(height: 4),
-                    Text(
-                      event.name,
-                      style: titleStyle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: width,
+                    height: _EventBodyText._recentEventImageHeight,
+                    child: buildImage(),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_formatEventDate(event.startDateTime),
+                            style: dateStyle),
+                        const SizedBox(height: 4),
+                        Text(
+                          event.name,
+                          style: titleStyle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
