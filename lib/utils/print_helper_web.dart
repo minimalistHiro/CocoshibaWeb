@@ -17,8 +17,9 @@ Future<void> printScheduleImpl(List<PrintMonthData> months) async {
   buffer.writeln('.day-row { display: flex; border-bottom: 1px solid #ddd; padding: 0; align-items: flex-start; }');
   buffer.writeln('.day-row.has-events { padding: 0; }');
   buffer.writeln('.day-row.closed { background: #f0f0f0; }');
-  buffer.writeln('.cell-date { width: 42px; font-weight: 700; align-self: center; line-height: 1.0; }');
-  buffer.writeln('.cell-weekday { width: 36px; color: #555; align-self: center; line-height: 1.0; }');
+  buffer.writeln('.cell-date { width: 56px; font-weight: 700; align-self: center; line-height: 1.0; display: flex; gap: 0; }');
+  buffer.writeln('.cell-date .date-part { display: inline-block; width: 2ch; text-align: right; }');
+  buffer.writeln('.cell-date .weekday-part { margin-left: 0; }');
   buffer.writeln('.cell-events { flex: 1; font-size: 10px; line-height: 0.9; white-space: pre-wrap; padding: 0; }');
   buffer.writeln('.day-row.has-events { background: #f7f0ad; }');
   buffer.writeln('.event-title { font-weight: 600; margin: 0; padding: 0; line-height: 1.0; white-space: nowrap; display: block; overflow: hidden; }');
@@ -51,8 +52,7 @@ Future<void> printScheduleImpl(List<PrintMonthData> months) async {
               ? 'weekday-sat'
               : '';
       buffer.writeln('<div class="$rowClass">');
-      buffer.writeln('<div class="cell-date $weekdayClass">${_escape(day.dayLabel)}</div>');
-      buffer.writeln('<div class="cell-weekday $weekdayClass">${_escape(day.weekdayLabel)}</div>');
+      buffer.writeln('<div class="cell-date $weekdayClass"><span class="date-part">${_escape(_padDayLabel(day.dayLabel))}</span><span class="weekday-part">${_escape(day.weekdayLabel)}</span></div>');
       final eventsClass = 'cell-events';
       buffer.writeln('<div class="$eventsClass">');
       if (day.events.isEmpty) {
@@ -116,4 +116,11 @@ String _escape(String input) {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
+}
+
+String _padDayLabel(String label) {
+  if (label.length == 1) {
+    return ' $label';
+  }
+  return label;
 }
