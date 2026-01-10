@@ -1,6 +1,8 @@
 import 'package:cocoshibaweb/app.dart';
+import 'package:cocoshibaweb/router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginInfoUpdatePage extends StatefulWidget {
   const LoginInfoUpdatePage({super.key});
@@ -71,7 +73,7 @@ class _LoginInfoUpdatePageState extends State<LoginInfoUpdatePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('ログイン情報を更新しました')),
       );
-      Navigator.of(context).maybePop();
+      context.go(CocoshibaPaths.home);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -216,4 +218,3 @@ class _LoginInfoUpdatePageState extends State<LoginInfoUpdatePage> {
     );
   }
 }
-

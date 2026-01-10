@@ -163,6 +163,7 @@ class FirebaseAuthService implements AuthService {
       emailVerified: user.emailVerified,
       displayName: user.displayName,
       photoUrl: user.photoURL,
+      providerIds: user.providerData.map((info) => info.providerId).toSet(),
     );
   }
 }
