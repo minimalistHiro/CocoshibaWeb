@@ -1,24 +1,22 @@
-2026/01/09-13:45:20.051 1b3c24 Reusing MANIFEST /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.sV7i0z/flutter_tools_chrome_device.CUj3cH/Default/shared_proto_db/MANIFEST-000001
-2026/01/09-13:45:20.052 1b3c24 Recovering log #32
-2026/01/09-13:45:20.053 1b3c24 Reusing old log /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.sV7i0z/flutter_tools_chrome_device.CUj3cH/Default/shared_proto_db/000032.log 
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #13
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #7
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #4
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #10
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #29
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #16
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #3
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #14
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #17
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #11
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #8
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #21
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #27
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #24
-2026/01/09-13:45:20.054 1b3c24 Delete type=2 #30
-2026/01/09-13:45:20.054 1b3c24 Delete type=0 #26
-2026/01/09-13:45:20.055 1b3c24 Delete type=0 #19
-2026/01/09-13:45:20.055 1b3c24 Delete type=0 #23
-2026/01/09-13:45:50.132 1b3c21 Level-0 table #37: started
-2026/01/09-13:45:50.138 1b3c21 Level-0 table #37: 124189 bytes OK
-2026/01/09-13:45:50.142 1b3c21 Delete type=0 #32
+2026/01/10-09:45:21.448 2d3ce5 Reusing MANIFEST /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.jUaVYr/flutter_tools_chrome_device.PRY9fq/Default/shared_proto_db/MANIFEST-000001
+2026/01/10-09:45:21.449 2d3ce5 Recovering log #36
+2026/01/10-09:45:21.449 2d3ce5 Reusing old log /private/var/folders/45/d2x46xrd1194svtw7th3969c0000gp/T/flutter_tools.jUaVYr/flutter_tools_chrome_device.PRY9fq/Default/shared_proto_db/000036.log 
+2026/01/10-09:45:21.449 2d3ce5 Delete type=0 #13
+2026/01/10-09:45:21.449 2d3ce5 Delete type=0 #7
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #4
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #10
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #29
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #16
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #3
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #14
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #17
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #11
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #8
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #21
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #27
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #24
+2026/01/10-09:45:21.450 2d3ce5 Delete type=2 #30
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #32
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #26
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #19
+2026/01/10-09:45:21.450 2d3ce5 Delete type=0 #23

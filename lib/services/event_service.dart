@@ -455,11 +455,20 @@ class EventService {
     }
   }
 
-  Stream<List<CalendarEvent>> watchReservedEvents(String userId) {
-    return _userReservationsRef(userId)
-        .orderBy('eventStartDateTime')
-        .snapshots()
-        .asyncMap((snapshot) async {
+  Stream<List<CalendarEvent>> watchReservedEvents(
+    String userId, {
+    DateTime? startDateTime,
+  }) {
+    Query<Map<String, dynamic>> query = _userReservationsRef(userId);
+    if (startDateTime != null) {
+      query = query.where(
+        'eventStartDateTime',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(startDateTime),
+      );
+    }
+    query = query.orderBy('eventStartDateTime');
+
+    return query.snapshots().asyncMap((snapshot) async {
       if (snapshot.docs.isEmpty) return const <CalendarEvent>[];
       final eventIds = snapshot.docs.map((doc) => doc.id).toSet();
       if (eventIds.isEmpty) return const <CalendarEvent>[];

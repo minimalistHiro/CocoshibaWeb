@@ -901,7 +901,7 @@ class _ReservedEventsContent extends StatelessWidget {
 
   Stream<List<CalendarEvent>> _reservedStreamFor(AuthUser user) {
     return eventService
-        .watchReservedEvents(user.uid)
+        .watchReservedEvents(user.uid, startDateTime: DateTime.now())
         .map((events) => events.take(7).toList(growable: false));
   }
 
