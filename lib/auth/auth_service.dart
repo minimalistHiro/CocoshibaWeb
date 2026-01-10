@@ -52,6 +52,7 @@ class AuthUser {
     required this.emailVerified,
     this.displayName,
     this.photoUrl,
+    this.providerIds = const {},
   });
 
   final String uid;
@@ -59,4 +60,7 @@ class AuthUser {
   final bool emailVerified;
   final String? displayName;
   final String? photoUrl;
+  final Set<String> providerIds;
+
+  bool get isGoogleSignIn => providerIds.contains('google.com');
 }

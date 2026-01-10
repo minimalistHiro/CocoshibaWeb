@@ -1,6 +1,7 @@
 import 'package:cocoshibaweb/app.dart';
 import 'package:cocoshibaweb/auth/auth_service.dart';
 import 'package:cocoshibaweb/router.dart';
+import 'package:cocoshibaweb/services/owner_service.dart';
 import 'package:cocoshibaweb/widgets/menu_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,8 @@ Future<void> _showAccountItemsDialog(
   required AuthUser user,
 }) {
   final rootContext = context;
+  final auth = AppServices.of(context).auth;
+  final ownerService = OwnerService();
   final theme = Theme.of(context);
   final colorScheme = theme.colorScheme;
   final name = (user.displayName ?? '').trim();
@@ -63,13 +66,18 @@ Future<void> _showAccountItemsDialog(
     IconData icon,
     String title, {
     String? subtitle,
+    Color? titleColor,
+    Color? iconColor,
     VoidCallback? onTap,
   }) {
     return ListTile(
       dense: true,
       onTap: onTap,
-      leading: Icon(icon, color: colorScheme.onSurfaceVariant),
-      title: Text(title),
+      leading: Icon(icon, color: iconColor ?? colorScheme.onSurfaceVariant),
+      title: Text(
+        title,
+        style: titleColor == null ? null : TextStyle(color: titleColor),
+      ),
       subtitle: subtitle == null ? null : Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
     );
@@ -96,15 +104,16 @@ Future<void> _showAccountItemsDialog(
                   rootContext.go(CocoshibaPaths.profileEdit);
                 },
               ),
-              linkItem(
-                Icons.lock_outline,
-                'ログイン情報変更',
-                subtitle: 'パスワードを更新',
-                onTap: () {
-                  Navigator.of(dialogContext).pop();
-                  rootContext.go(CocoshibaPaths.loginInfoUpdate);
-                },
-              ),
+              if (!user.isGoogleSignIn)
+                linkItem(
+                  Icons.lock_outline,
+                  'ログイン情報変更',
+                  subtitle: 'パスワードを更新',
+                  onTap: () {
+                    Navigator.of(dialogContext).pop();
+                    rootContext.go(CocoshibaPaths.loginInfoUpdate);
+                  },
+                ),
               sectionHeader('データとサポート'),
               linkItem(
                 Icons.privacy_tip_outlined,
@@ -142,24 +151,75 @@ Future<void> _showAccountItemsDialog(
                   rootContext.go(CocoshibaPaths.privacyPolicy);
                 },
               ),
-              sectionHeader('管理者設定（管理者のみ）'),
-              item(Icons.support_agent_outlined, 'ユーザーチャットサポート',
-                  subtitle: 'ユーザーとのチャット履歴を確認'),
-              item(Icons.dashboard_customize_outlined, 'ホーム画面編集',
-                  subtitle: 'ホームのページを追加・整理'),
-              item(Icons.local_offer_outlined, 'キャンペーン編集',
-                  subtitle: '掲載・開催期間を管理'),
-              item(Icons.event_busy_outlined, '定休日設定',
-                  subtitle: '休業日をカレンダーで管理'),
-              item(Icons.admin_panel_settings_outlined, 'オーナー設定',
-                  subtitle: 'ポイント還元率・店舗情報の管理'),
-              item(Icons.restaurant_menu_outlined, 'メニュー管理',
-                  subtitle: 'メニュー一覧の編集・追加'),
-              item(Icons.edit_calendar_outlined, '既存イベント編集',
-                  subtitle: '公開済みイベントの内容を変更'),
-              const SizedBox(height: 8),
-              item(Icons.logout, 'ログアウト'),
-              item(Icons.delete_forever, 'アカウント削除'),
+              StreamBuilder<bool>(
+                stream: ownerService.watchIsOwner(user),
+                builder: (context, snapshot) {
+                  final isOwner = snapshot.data == true;
+
+                  if (!isOwner) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        linkItem(
+                          Icons.logout,
+                          'ログアウト',
+                          titleColor: colorScheme.error,
+                          iconColor: colorScheme.error,
+                          onTap: () async {
+                            Navigator.of(dialogContext).pop();
+                            final confirmed = await _confirmSignOut(rootContext);
+                            if (confirmed != true) return;
+                            await auth.signOut();
+                            if (rootContext.mounted) {
+                              rootContext.go(CocoshibaPaths.home);
+                            }
+                          },
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      sectionHeader('管理者設定（管理者のみ）'),
+                      item(Icons.support_agent_outlined, 'ユーザーチャットサポート',
+                          subtitle: 'ユーザーとのチャット履歴を確認'),
+                      item(Icons.dashboard_customize_outlined, 'ホーム画面編集',
+                          subtitle: 'ホームのページを追加・整理'),
+                      item(Icons.local_offer_outlined, 'キャンペーン編集',
+                          subtitle: '掲載・開催期間を管理'),
+                      item(Icons.event_busy_outlined, '定休日設定',
+                          subtitle: '休業日をカレンダーで管理'),
+                      item(Icons.admin_panel_settings_outlined, 'オーナー設定',
+                          subtitle: 'ポイント還元率・店舗情報の管理'),
+                      item(Icons.restaurant_menu_outlined, 'メニュー管理',
+                          subtitle: 'メニュー一覧の編集・追加'),
+                      item(Icons.edit_calendar_outlined, '既存イベント編集',
+                          subtitle: '公開済みイベントの内容を変更'),
+                      const SizedBox(height: 8),
+                      linkItem(
+                        Icons.logout,
+                        'ログアウト',
+                        titleColor: colorScheme.error,
+                        iconColor: colorScheme.error,
+                        onTap: () async {
+                          Navigator.of(dialogContext).pop();
+                          final confirmed =
+                              await _confirmSignOut(rootContext);
+                          if (confirmed != true) return;
+                          await auth.signOut();
+                          if (rootContext.mounted) {
+                            rootContext.go(CocoshibaPaths.home);
+                          }
+                        },
+                      ),
+                      item(Icons.delete_forever, 'アカウント削除'),
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -444,19 +504,6 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     return Row(
                       children: [
                         IconButton(
-                          tooltip: 'ログアウト',
-                          onPressed: () async {
-                            final confirmed = await _confirmSignOut(context);
-                            if (confirmed != true) return;
-                            await auth.signOut();
-                            if (context.mounted) {
-                              context.go(CocoshibaPaths.home);
-                            }
-                          },
-                          padding: const EdgeInsets.symmetric(horizontal: 1),
-                          icon: const Icon(Icons.logout),
-                        ),
-                        IconButton(
                           tooltip: 'アカウント',
                           onPressed: () =>
                               _showAccountItemsDialog(context, user: user),
@@ -469,19 +516,6 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
                   return Row(
                     children: [
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: () async {
-                          final confirmed = await _confirmSignOut(context);
-                          if (confirmed != true) return;
-                          await auth.signOut();
-                          if (context.mounted) {
-                            context.go(CocoshibaPaths.home);
-                          }
-                        },
-                        child: const Text('ログアウト'),
-                      ),
-                      const SizedBox(width: 8),
                       IconButton(
                         tooltip: 'アカウント',
                         onPressed: () =>
